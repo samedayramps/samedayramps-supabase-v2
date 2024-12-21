@@ -50,12 +50,6 @@ export default async function QuoteAcceptedPage({
             </p>
           </>
         )}
-        
-        <div className="pt-8">
-          <Link href="/">
-            <Button>Return Home</Button>
-          </Link>
-        </div>
       </div>
     </div>
   )

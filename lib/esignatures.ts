@@ -78,7 +78,7 @@ class ESignaturesClientImpl {
       throw new Error('ESIGNATURES_API_KEY environment variable is not set');
     }
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.esignatures.io/api';
+    this.baseUrl = 'https://esignatures.com/api';
   }
 
   private async request<T>(
