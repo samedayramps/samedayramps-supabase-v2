@@ -26,6 +26,12 @@ export const routes = [
     color: "text-violet-500",
   },
   {
+    label: "Customers",
+    icon: Users,
+    href: "/customers",
+    color: "text-blue-500",
+  },
+  {
     label: "Quotes",
     icon: FileText,
     href: "/quotes",

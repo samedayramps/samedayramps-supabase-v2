@@ -238,65 +238,79 @@ export function DataTableRowActions<TData>({
   deleteAction,
   extraActions = [],
 }: DataTableRowActionsProps<TData>) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-        >
-          <DotsHorizontalIcon className="h-4 w-4" />
-          <span className="sr-only">Open menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[160px]">
-        {editHref && (
-          <>
-            <DropdownMenuItem asChild>
-              <Link href={editHref} className="w-full">
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </DropdownMenuItem>
-            {(extraActions.length > 0 || deleteAction) && <DropdownMenuSeparator />}
-          </>
-        )}
-        
-        {extraActions.map((action, index) => (
-          <React.Fragment key={action.label}>
-            {index > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuItem
-              onClick={action.onClick}
-              disabled={action.disabled}
-              className={action.loading ? 'opacity-50 cursor-wait' : ''}
-            >
-              {action.loading ? (
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              {action.label}
-            </DropdownMenuItem>
-          </React.Fragment>
-        ))}
-        
-        {deleteAction && (
-          <>
-            {extraActions.length > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuItem
-              onClick={async () => {
-                if (window.confirm('Are you sure you want to delete this item?')) {
-                  await deleteAction((row as any).id)
-                }
-              }}
-              className="text-red-600"
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[160px]">
+          {editHref && (
+            <>
+              <DropdownMenuItem asChild>
+                <Link href={editHref} className="w-full">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Link>
+              </DropdownMenuItem>
+              {(extraActions.length > 0 || deleteAction) && <DropdownMenuSeparator />}
+            </>
+          )}
+          
+          {extraActions.map((action, index) => (
+            <React.Fragment key={action.label}>
+              {index > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuItem
+                onClick={action.onClick}
+                disabled={action.disabled}
+                className={action.loading ? 'opacity-50 cursor-wait' : ''}
+              >
+                {action.loading ? (
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                {action.label}
+              </DropdownMenuItem>
+            </React.Fragment>
+          ))}
+          
+          {deleteAction && (
+            <>
+              {extraActions.length > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuItem
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Item"
+        description="Are you sure you want to delete this item? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={async () => {
+          if (deleteAction) {
+            await deleteAction((row as any).id)
+            setShowDeleteConfirm(false)
+          }
+        }}
+      />
+    </>
   )
 } 
