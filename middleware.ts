@@ -43,6 +43,8 @@ export async function middleware(request: NextRequest) {
                        path === '/sign-up' || 
                        path === '/forgot-password' ||
                        path.startsWith('/_next') || 
+                       path.startsWith('/api/quotes/accept') ||
+                       path.startsWith('/quote-accepted') ||
                        path.startsWith('/api');
 
   // If the user is not logged in and trying to access a protected route
