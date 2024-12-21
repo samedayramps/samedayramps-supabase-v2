@@ -181,9 +181,7 @@ export async function sendAgreement(id: string): Promise<{ success: boolean; err
           value: agreement.quote?.rental_type || "ONE_TIME"
         }
       ],
-      metadata: {
-        agreementId: agreement.id,
-      },
+      metadata: `agreementId:${agreement.id}`,
       custom_webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/esignatures`,
       expires_in_hours: "72", // 3 days expiry
     }

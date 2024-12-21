@@ -15,7 +15,7 @@ export interface CreateDocumentOptions {
     api_key: string;
     value: string;
   }>;
-  metadata?: Record<string, string>;
+  metadata?: string;
   custom_webhook_url?: string;
   expires_in_hours?: string;
 }
