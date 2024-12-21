@@ -157,28 +157,36 @@ export async function sendAgreement(id: string): Promise<{ success: boolean; err
       }],
       placeholder_fields: [
         {
-          api_key: "customer_name",
+          api_key: "customerName",
           value: customerName
         },
         {
-          api_key: "customer_email",
+          api_key: "customerEmail",
           value: customerEmail
         },
         {
-          api_key: "install_address",
+          api_key: "customerPhone",
+          value: customerPhone || ""
+        },
+        {
+          api_key: "installAddress",
           value: installAddress
         },
         {
-          api_key: "monthly_rate",
+          api_key: "monthlyRate",
           value: agreement.quote?.monthly_rental_rate?.toString() || "0"
         },
         {
-          api_key: "setup_fee",
+          api_key: "setupFee",
           value: agreement.quote?.setup_fee?.toString() || "0"
         },
         {
-          api_key: "rental_type",
+          api_key: "rentalType",
           value: agreement.quote?.rental_type || "ONE_TIME"
+        },
+        {
+          api_key: "date",
+          value: new Date().toLocaleDateString()
         }
       ],
       metadata: `agreementId:${agreement.id}`,
@@ -230,16 +238,32 @@ export async function handleSignatureWebhook(
   
   try {
     const { status, data } = payload
-    const agreementId = data.contract.metadata?.agreementId
+    const agreementId = data.contract.metadata?.split(':')?.[1]
 
     if (!agreementId) {
       throw new Error('Agreement ID not found in contract metadata')
     }
 
     let newStatus
+    let additionalData = {}
+
     switch (status) {
-      case 'signer-signed-the-contract':
+      case 'contract-sent-to-signer':
+        newStatus = 'SENT'
+        break
+      case 'signer-viewed-the-contract':
+        newStatus = 'SENT'
+        additionalData = {
+          viewed_date: data.signer?.events?.find(e => e.event === 'contract_viewed')?.timestamp
+        }
+        break
+      case 'signer-signed':
+      case 'contract-signed':
         newStatus = 'SIGNED'
+        additionalData = {
+          signed_date: data.contract.finalized_at,
+          contract_pdf_url: data.contract.contract_pdf_url
+        }
         break
       case 'signer-declined-the-signature':
         newStatus = 'DECLINED'
@@ -251,12 +275,27 @@ export async function handleSignatureWebhook(
         return { success: true } // Ignore other webhook events
     }
 
-    // Update agreement status
+    // Get existing agreement data
+    const { data: agreement } = await supabase
+      .from('agreements')
+      .select('notes')
+      .eq('id', agreementId)
+      .single()
+
+    // Parse existing notes or create new object
+    const existingNotes = typeof agreement?.notes === 'object' ? agreement.notes : {}
+    
+    // Update agreement status and notes
     const { error: updateError } = await supabase
       .from('agreements')
       .update({ 
         agreement_status: newStatus,
-        signed_date: status === 'signer-signed-the-contract' ? new Date().toISOString() : null,
+        notes: {
+          ...existingNotes,
+          ...additionalData,
+          last_status_update: new Date().toISOString(),
+          last_webhook_status: status
+        } as any // Cast to any since Supabase accepts JSON type
       })
       .eq('id', agreementId)
 

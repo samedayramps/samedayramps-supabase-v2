@@ -44,15 +44,21 @@ export interface DocumentResponse {
 
 // Webhook event types
 export interface WebhookPayload {
-  status: string;
+  status: 'contract-sent-to-signer' | 'signer-viewed-the-contract' | 'signer-signed' | 
+         'contract-signed' | 'signer-declined-the-signature' | 'contract-expired';
   secret_token: string;
   data: {
     contract: {
       id: string;
       title: string;
-      metadata?: Record<string, string>;
+      metadata?: string;
       source: string;
       test: string;
+      status: string;
+      finalized_at?: string;
+      contract_pdf_url?: string;
+      expires_at?: string;
+      custom_webhook_url?: string;
     };
     signer?: {
       id: string;
@@ -63,6 +69,12 @@ export interface WebhookPayload {
       signing_order?: string;
       auto_sign?: string;
       redirect_url?: string;
+      events?: Array<{
+        event: string;
+        timestamp: string;
+        remote_ip?: string;
+      }>;
+      signer_field_values?: Record<string, any>;
     };
   };
 }
