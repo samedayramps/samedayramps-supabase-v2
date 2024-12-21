@@ -1,0 +1,88 @@
+Here is my planned project structure:
+
+samedayramps-supabase-v2/
+├─ app/
+│  ├─ (dashboard)/
+│  │  ├─ layout.tsx
+│  │  └─ page.tsx
+│  ├─ leads/
+│  │  ├─ page.tsx
+│  │  └─ [leadId]/
+│  │     ├─ page.tsx
+│  │     └─ edit/
+│  │         └─ page.tsx
+│  ├─ quotes/
+│  │  ├─ page.tsx
+│  │  └─ [quoteId]/
+│  │     └─ page.tsx
+│  ├─ agreements/
+│  │  ├─ page.tsx
+│  │  └─ [agreementId]/
+│  │     └─ page.tsx
+│  ├─ installations/
+│  │  ├─ page.tsx
+│  │  └─ [installationId]/
+│  │     └─ page.tsx
+│  ├─ invoices/
+│  │  ├─ page.tsx
+│  │  └─ [invoiceId]/
+│  │     └─ page.tsx
+│  ├─ api/
+│  │  ├─ leads/
+│  │  │  └─ route.ts
+│  │  ├─ quotes/
+│  │  │  └─ route.ts
+│  │  ├─ agreements/
+│  │  │  └─ route.ts
+│  │  ├─ installations/
+│  │  │  └─ route.ts
+│  │  └─ invoices/
+│  │     └─ route.ts
+│  ├─ layout.tsx
+│  └─ page.tsx
+├─ components/
+│  ├─ layout/
+│  │  ├─ Header.tsx
+│  │  └─ Footer.tsx
+│  ├─ forms/
+│  │  ├─ LeadForm.tsx
+│  │  ├─ QuoteForm.tsx
+│  │  ├─ AgreementForm.tsx
+│  │  ├─ InstallationForm.tsx
+│  │  ├─ InvoiceForm.tsx
+│  │  └─ ...
+│  ├─ tables/
+│  │  ├─ LeadsTable.tsx
+│  │  ├─ QuotesTable.tsx
+│  │  └─ ...
+│  ├─ modals/
+│  │  └─ ConfirmModal.tsx
+│  ├─ common/
+│  │  ├─ Button.tsx
+│  │  ├─ Input.tsx
+│  │  ├─ Select.tsx
+│  │  └─ ...
+│  └─ ...
+├─ lib/
+│  ├─ supabaseClient.ts      // Initializes and exports Supabase client
+│  ├─ db-types.d.ts          // Types for your Supabase schema if using TypeScript
+│  ├─ validations.ts         // Yup/Zod validators for form fields
+│  ├─ constants.ts           // Constants (e.g., status enums)
+│  └─ utils.ts               // Helper functions (formatting, date/time, etc.)
+├─ hooks/
+│  ├─ useLeads.ts            // Custom hooks for leads data fetching/manipulation
+│  ├─ useQuotes.ts
+│  ├─ useAgreements.ts
+│  ├─ useInstallations.ts
+│  └─ useInvoices.ts
+├─ public/
+│  └─ assets/
+│      └─ images/
+├─ prisma/                   // Optional, if using Prisma with Supabase
+│  └─ schema.prisma
+├─ .env
+├─ .eslintrc.js
+├─ .prettierrc
+├─ package.json
+├─ tsconfig.json
+└─ README.md

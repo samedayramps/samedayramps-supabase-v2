@@ -4,6 +4,7 @@ import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -132,3 +133,21 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+export async function deleteLead(id: string): Promise<void> {
+  const supabase = await createClient();
+
+  try {
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .match({ id })
+
+    if (error) throw error
+
+    revalidatePath('/leads')
+  } catch (error) {
+    console.error('Error deleting lead:', error)
+    throw new Error('Failed to delete lead')
+  }
+}
