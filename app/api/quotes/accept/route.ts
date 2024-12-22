@@ -78,8 +78,6 @@ export async function GET(request: NextRequest) {
         lead_id: quote.lead_id,
         setup_fee: quote.setup_fee,
         monthly_rental_rate: quote.monthly_rental_rate,
-        install_date: quote.install_date,
-        removal_date: quote.removal_date,
         notes: quote.notes,
         agreement_status: 'DRAFT'
       })
