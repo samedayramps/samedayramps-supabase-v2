@@ -30,7 +30,25 @@ export async function GET(request: NextRequest) {
     // Check if quote exists and is not already accepted
     const { data: quote, error: quoteError } = await supabase
       .from("quotes")
-      .select("*")
+      .select(`
+        *,
+        lead:leads(
+          customer:customers(
+            first_name,
+            last_name,
+            email,
+            phone
+          ),
+          addresses(
+            formatted_address,
+            street_number,
+            street_name,
+            city,
+            state,
+            postal_code
+          )
+        )
+      `)
       .eq('id', id)
       .single()
 
@@ -86,6 +104,21 @@ export async function GET(request: NextRequest) {
 
     // Try to send agreement
     try {
+      // Log data available for agreement
+      console.log('Data available for agreement:', {
+        quote: {
+          rental_type: quote.rental_type,
+          monthly_rental_rate: quote.monthly_rental_rate,
+          setup_fee: quote.setup_fee,
+        },
+        customer: {
+          name: quote.lead?.customer ? `${quote.lead.customer.first_name} ${quote.lead.customer.last_name}` : 'Missing',
+          email: quote.lead?.customer?.email || 'Missing',
+          phone: quote.lead?.customer?.phone || 'Missing',
+        },
+        address: quote.lead?.addresses?.[0]?.formatted_address || 'Missing',
+      });
+
       const sendResult = await sendAgreement(agreement.id)
       if (!sendResult.success) {
         console.error('Agreement send error:', sendResult.error);
