@@ -84,4 +84,50 @@ export const INVOICE_TYPE_LABELS: Record<keyof typeof INVOICE_TYPE, string> = {
   RENTAL: 'Rental Payment',
   REMOVAL: 'Removal Fee',
 } as const
+
+export const INVOICE_STATUS = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED',
+} as const
+
+export const INVOICE_STATUS_LABELS: Record<keyof typeof INVOICE_STATUS, string> = {
+  PENDING: 'Pending',
+  PROCESSING: 'Processing',
+  PAID: 'Paid',
+  FAILED: 'Failed',
+  REFUNDED: 'Refunded',
+} as const
+
+export const SUBSCRIPTION_STATUS = {
+  INCOMPLETE: 'incomplete',
+  INCOMPLETE_EXPIRED: 'incomplete_expired',
+  TRIALING: 'trialing',
+  ACTIVE: 'active',
+  PAST_DUE: 'past_due',
+  CANCELED: 'canceled',
+  UNPAID: 'unpaid',
+} as const
+
+export const SUBSCRIPTION_STATUS_LABELS: Record<keyof typeof SUBSCRIPTION_STATUS, string> = {
+  INCOMPLETE: 'Incomplete',
+  INCOMPLETE_EXPIRED: 'Expired',
+  TRIALING: 'Trial',
+  ACTIVE: 'Active',
+  PAST_DUE: 'Past Due',
+  CANCELED: 'Canceled',
+  UNPAID: 'Unpaid',
+} as const
+
+export const PAYMENT_METHOD_TYPE = {
+  CARD: 'card',
+  BANK_ACCOUNT: 'bank_account',
+} as const
+
+export const PAYMENT_METHOD_TYPE_LABELS: Record<keyof typeof PAYMENT_METHOD_TYPE, string> = {
+  CARD: 'Credit/Debit Card',
+  BANK_ACCOUNT: 'Bank Account',
+} as const
   

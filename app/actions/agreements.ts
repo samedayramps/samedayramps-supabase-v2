@@ -247,7 +247,7 @@ export async function handleSignatureWebhook(
     }
 
     let newStatus
-    let additionalData = {}
+    let additionalData: any = {}
 
     switch (status) {
       case 'contract-sent-to-signer':
@@ -292,12 +292,13 @@ export async function handleSignatureWebhook(
       .from('agreements')
       .update({ 
         agreement_status: newStatus,
+        signed_date: additionalData.signed_date || null,
         notes: {
           ...existingNotes,
           ...additionalData,
           last_status_update: new Date().toISOString(),
           last_webhook_status: status
-        } as any // Cast to any since Supabase accepts JSON type
+        }
       })
       .eq('id', agreementId)
 

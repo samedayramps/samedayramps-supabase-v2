@@ -5,10 +5,14 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { type Tables } from "@/types/database.types"
 import Stripe from 'stripe'
+import { Resend } from 'resend'
+import InvoiceEmail from '@/components/emails/invoice-email'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
 })
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function deleteInvoice(id: string): Promise<void> {
   const supabase = await createClient()
@@ -177,6 +181,20 @@ export async function sendInvoice(id: string): Promise<SendInvoiceResponse> {
       // Get the client secret for the initial payment
       const clientSecret = (subscription.latest_invoice as any).payment_intent.client_secret;
 
+      // Send email with subscription setup link
+      await resend.emails.send({
+        from: 'Same Day Ramps <billing@samedayramps.com>',
+        to: customerEmail,
+        subject: `Set Up Your Monthly Rental Payment - ${customerName}`,
+        react: InvoiceEmail({
+          customerName,
+          amount: invoice.amount!,
+          invoiceType: invoice.invoice_type as 'RENTAL' | 'SETUP' | 'REMOVAL',
+          isRecurring: true,
+          paymentUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoice.id}/setup?client_secret=${clientSecret}`,
+        }),
+      });
+
       return {
         success: true,
         subscriptionId: subscription.id,
@@ -214,6 +232,20 @@ export async function sendInvoice(id: string): Promise<SendInvoiceResponse> {
             url: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoice.id}/success`,
           },
         },
+      });
+
+      // Send email with payment link
+      await resend.emails.send({
+        from: 'Same Day Ramps <billing@samedayramps.com>',
+        to: customerEmail,
+        subject: `Payment Required - ${customerName}`,
+        react: InvoiceEmail({
+          customerName,
+          amount: invoice.amount!,
+          invoiceType: invoice.invoice_type as 'RENTAL' | 'SETUP' | 'REMOVAL',
+          isRecurring: false,
+          paymentUrl: paymentLink.url,
+        }),
       });
 
       return { 
