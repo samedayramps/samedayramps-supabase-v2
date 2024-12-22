@@ -62,11 +62,8 @@ export async function GET(request: NextRequest) {
 
     console.log('Creating agreement for quote:', {
       quote_id: id,
-      lead_id: quote.lead_id,
       setup_fee: quote.setup_fee,
       monthly_rental_rate: quote.monthly_rental_rate,
-      install_date: quote.install_date,
-      removal_date: quote.removal_date,
       notes: quote.notes,
     });
 
@@ -75,7 +72,6 @@ export async function GET(request: NextRequest) {
       .from("agreements")
       .insert({
         quote_id: id,
-        lead_id: quote.lead_id,
         setup_fee: quote.setup_fee,
         monthly_rental_rate: quote.monthly_rental_rate,
         notes: quote.notes,
