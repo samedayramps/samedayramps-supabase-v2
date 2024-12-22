@@ -83,25 +83,25 @@ export async function sendAgreement(id: string): Promise<{ success: boolean; err
       .from('agreements')
       .select(`
         *,
-        quote:quotes(
+        quote:quotes!inner(
           monthly_rental_rate,
           setup_fee,
           rental_type,
           valid_until,
-          lead:leads(
-            customer:customers(
+          lead:leads!inner(
+            customer:customers!inner(
               first_name,
               last_name,
               email,
-              phone
-            ),
-            addresses(
-              formatted_address,
-              street_number,
-              street_name,
-              city,
-              state,
-              postal_code
+              phone,
+              addresses(
+                formatted_address,
+                street_number,
+                street_name,
+                city,
+                state,
+                postal_code
+              )
             )
           )
         )
@@ -129,7 +129,7 @@ export async function sendAgreement(id: string): Promise<{ success: boolean; err
     const customerPhone = agreement.quote?.lead?.customer?.phone
     
     // Get address components
-    const address = agreement.quote?.lead?.addresses?.[0]
+    const address = agreement.quote?.lead?.customer?.addresses?.[0]
     if (!address) {
       throw new Error('Installation address not found')
     }
