@@ -53,11 +53,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get address for the lead
+    // Get address for the customer
     const { data: addresses, error: addressError } = await supabase
       .from("addresses")
       .select("*")
-      .eq('lead_id', quote.lead.id)
+      .eq('customer_id', quote.lead.customer.id)
       .limit(1)
       .single()
 

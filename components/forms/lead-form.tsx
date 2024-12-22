@@ -109,6 +109,15 @@ export function LeadForm({ initialData }: LeadFormProps) {
       const supabase = createClient()
       
       if (initialData) {
+        // Get customer ID first
+        const { data: lead, error: leadError } = await supabase
+          .from('leads')
+          .select('customer_id')
+          .eq('id', initialData.id)
+          .single()
+
+        if (leadError) throw leadError
+
         // Update existing lead
         await updateLead(initialData.id, {
           status: values.status,
@@ -120,7 +129,7 @@ export function LeadForm({ initialData }: LeadFormProps) {
         })
 
         // Update or create address if place details exist
-        if (selectedPlaceDetails) {
+        if (selectedPlaceDetails && lead.customer_id) {
           const location = selectedPlaceDetails.geometry?.location
           const addressData = {
             formatted_address: selectedPlaceDetails.formatted_address!,
@@ -133,13 +142,13 @@ export function LeadForm({ initialData }: LeadFormProps) {
             lat: location?.lat() ?? null,
             lng: location?.lng() ?? null,
             place_id: selectedPlaceDetails.place_id ?? null,
-            lead_id: initialData.id,
+            customer_id: lead.customer_id
           }
 
           const { error: addressError } = await supabase
             .from('addresses')
             .upsert(addressData)
-            .eq('lead_id', initialData.id)
+            .eq('customer_id', lead.customer_id)
 
           if (addressError) throw addressError
         }
@@ -157,8 +166,8 @@ export function LeadForm({ initialData }: LeadFormProps) {
             .insert({
               first_name: values.customer.first_name,
               last_name: values.customer.last_name,
-              email: values.customer.email,
-              phone: values.customer.phone,
+              email: values.customer.email || null,
+              phone: values.customer.phone || null,
             })
             .select()
             .single()
@@ -183,23 +192,25 @@ export function LeadForm({ initialData }: LeadFormProps) {
           if (leadError) throw leadError
 
           // Create address if place details exist
-          if (selectedPlaceDetails && lead) {
+          if (selectedPlaceDetails && customer) {
             const location = selectedPlaceDetails.geometry?.location
+            const addressData = {
+              formatted_address: selectedPlaceDetails.formatted_address!,
+              street_number: getAddressComponent(selectedPlaceDetails, 'street_number'),
+              street_name: getAddressComponent(selectedPlaceDetails, 'route'),
+              city: getAddressComponent(selectedPlaceDetails, 'locality'),
+              state: getAddressComponent(selectedPlaceDetails, 'administrative_area_level_1'),
+              postal_code: getAddressComponent(selectedPlaceDetails, 'postal_code'),
+              country: getAddressComponent(selectedPlaceDetails, 'country'),
+              lat: location?.lat() ?? null,
+              lng: location?.lng() ?? null,
+              place_id: selectedPlaceDetails.place_id ?? null,
+              customer_id: customer.id
+            }
+
             const { error: addressError } = await supabase
               .from('addresses')
-              .insert({
-                formatted_address: selectedPlaceDetails.formatted_address!,
-                street_number: getAddressComponent(selectedPlaceDetails, 'street_number'),
-                street_name: getAddressComponent(selectedPlaceDetails, 'route'),
-                city: getAddressComponent(selectedPlaceDetails, 'locality'),
-                state: getAddressComponent(selectedPlaceDetails, 'administrative_area_level_1'),
-                postal_code: getAddressComponent(selectedPlaceDetails, 'postal_code'),
-                country: getAddressComponent(selectedPlaceDetails, 'country'),
-                lat: location?.lat() ?? null,
-                lng: location?.lng() ?? null,
-                place_id: selectedPlaceDetails.place_id ?? null,
-                lead_id: lead.id,
-              })
+              .insert(addressData)
 
             if (addressError) {
               console.error('Error creating address:', addressError)
