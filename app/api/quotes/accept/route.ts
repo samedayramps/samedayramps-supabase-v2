@@ -32,20 +32,14 @@ export async function GET(request: NextRequest) {
       .from("quotes")
       .select(`
         *,
-        lead:leads(
-          customer:customers(
+        lead:leads!inner(
+          id,
+          customer:customers!inner(
+            id,
             first_name,
             last_name,
             email,
             phone
-          ),
-          addresses(
-            formatted_address,
-            street_number,
-            street_name,
-            city,
-            state,
-            postal_code
           )
         )
       `)
@@ -56,6 +50,36 @@ export async function GET(request: NextRequest) {
       console.error('Quote fetch error:', quoteError);
       return NextResponse.redirect(
         new URL(`/quote-accepted?id=${id}&error=Quote not found`, request.url)
+      )
+    }
+
+    // Get address for the lead
+    const { data: addresses, error: addressError } = await supabase
+      .from("addresses")
+      .select("*")
+      .eq('lead_id', quote.lead.id)
+      .limit(1)
+      .single()
+
+    if (addressError || !addresses) {
+      console.error('Address fetch error:', addressError);
+      return NextResponse.redirect(
+        new URL(`/quote-accepted?id=${id}&error=Installation address missing`, request.url)
+      )
+    }
+
+    // Validate required data
+    if (!quote.lead?.customer) {
+      console.error('Customer data missing');
+      return NextResponse.redirect(
+        new URL(`/quote-accepted?id=${id}&error=Customer data missing`, request.url)
+      )
+    }
+
+    if (!addresses.formatted_address) {
+      console.error('Address data missing');
+      return NextResponse.redirect(
+        new URL(`/quote-accepted?id=${id}&error=Installation address missing`, request.url)
       )
     }
 
@@ -80,6 +104,8 @@ export async function GET(request: NextRequest) {
 
     const agreementData = {
       quote_id: id,
+      customer_id: quote.lead.customer.id,
+      address_id: addresses.id,
       notes: quote.notes,
       agreement_status: 'DRAFT'
     };
@@ -116,7 +142,7 @@ export async function GET(request: NextRequest) {
           email: quote.lead?.customer?.email || 'Missing',
           phone: quote.lead?.customer?.phone || 'Missing',
         },
-        address: quote.lead?.addresses?.[0]?.formatted_address || 'Missing',
+        address: addresses.formatted_address,
       });
 
       const sendResult = await sendAgreement(agreement.id)

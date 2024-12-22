@@ -31,6 +31,8 @@ export async function deleteAgreement(id: string): Promise<void> {
 
 type AgreementData = {
   quote_id: string;
+  customer_id: string;
+  address_id: string;
   agreement_status: string;
   notes?: any;
 }

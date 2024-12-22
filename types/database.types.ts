@@ -13,53 +13,50 @@ export type Database = {
         Row: {
           city: string | null
           country: string | null
-          created_at: string
-          customer_id: string | null
+          created_at: string | null
+          customer_id: string
           formatted_address: string
           id: string
           lat: number | null
-          lead_id: string | null
           lng: number | null
           place_id: string | null
           postal_code: string | null
           state: string | null
           street_name: string | null
           street_number: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           city?: string | null
           country?: string | null
-          created_at?: string
-          customer_id?: string | null
+          created_at?: string | null
+          customer_id: string
           formatted_address: string
           id?: string
           lat?: number | null
-          lead_id?: string | null
           lng?: number | null
           place_id?: string | null
           postal_code?: string | null
           state?: string | null
           street_name?: string | null
           street_number?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           city?: string | null
           country?: string | null
-          created_at?: string
-          customer_id?: string | null
+          created_at?: string | null
+          customer_id?: string
           formatted_address?: string
           id?: string
           lat?: number | null
-          lead_id?: string | null
           lng?: number | null
           place_id?: string | null
           postal_code?: string | null
           state?: string | null
           street_name?: string | null
           street_number?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -69,46 +66,59 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "addresses_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
         ]
       }
       agreements: {
         Row: {
+          address_id: string
           agreement_status: string
-          created_at: string
+          created_at: string | null
+          customer_id: string
           id: string
           notes: Json | null
           quote_id: string
           signed_date: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
+          address_id: string
           agreement_status?: string
-          created_at?: string
+          created_at?: string | null
+          customer_id: string
           id?: string
           notes?: Json | null
           quote_id: string
           signed_date?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
+          address_id?: string
           agreement_status?: string
-          created_at?: string
+          created_at?: string | null
+          customer_id?: string
           id?: string
           notes?: Json | null
           quote_id?: string
           signed_date?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_agreements_quote_id"
+            foreignKeyName: "agreements_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agreements_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agreements_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
@@ -118,71 +128,71 @@ export type Database = {
       }
       customers: {
         Row: {
-          created_at: string
+          created_at: string | null
           email: string | null
           first_name: string | null
           id: string
           last_name: string | null
           notes: Json | null
           phone: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           notes?: Json | null
           phone?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           notes?: Json | null
           phone?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
       installations: {
         Row: {
           agreement_id: string
-          created_at: string
+          created_at: string | null
           id: string
           installation_date: string | null
           installation_photos: Json | null
           installed_by: string | null
           sign_off: boolean
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           agreement_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           installation_date?: string | null
           installation_photos?: Json | null
           installed_by?: string | null
           sign_off?: boolean
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           agreement_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           installation_date?: string | null
           installation_photos?: Json | null
           installed_by?: string | null
           sign_off?: boolean
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_installations_agreement_id"
+            foreignKeyName: "installations_agreement_id_fkey"
             columns: ["agreement_id"]
             isOneToOne: false
             referencedRelation: "agreements"
@@ -194,36 +204,36 @@ export type Database = {
         Row: {
           agreement_id: string
           amount: number | null
-          created_at: string
+          created_at: string | null
           id: string
           invoice_type: string
           paid: boolean
           payment_date: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           agreement_id: string
           amount?: number | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           invoice_type: string
           paid?: boolean
           payment_date?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           agreement_id?: string
           amount?: number | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           invoice_type?: string
           paid?: boolean
           payment_date?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_invoices_agreement_id"
+            foreignKeyName: "invoices_agreement_id_fkey"
             columns: ["agreement_id"]
             isOneToOne: false
             referencedRelation: "agreements"
@@ -233,7 +243,7 @@ export type Database = {
       }
       leads: {
         Row: {
-          created_at: string
+          created_at: string | null
           customer_id: string
           id: string
           mobility_type: string | null
@@ -242,10 +252,10 @@ export type Database = {
           rental_duration: string | null
           status: string
           timeline: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           customer_id: string
           id?: string
           mobility_type?: string | null
@@ -254,10 +264,10 @@ export type Database = {
           rental_duration?: string | null
           status?: string
           timeline?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           customer_id?: string
           id?: string
           mobility_type?: string | null
@@ -266,11 +276,11 @@ export type Database = {
           rental_duration?: string | null
           status?: string
           timeline?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_leads_customer_id"
+            foreignKeyName: "leads_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
@@ -280,7 +290,9 @@ export type Database = {
       }
       quotes: {
         Row: {
-          created_at: string
+          address_id: string
+          created_at: string | null
+          customer_id: string
           flat_rate: number | null
           id: string
           install_date: string | null
@@ -291,11 +303,13 @@ export type Database = {
           removal_date: string | null
           rental_type: string
           setup_fee: number | null
-          updated_at: string
+          updated_at: string | null
           valid_until: string | null
         }
         Insert: {
-          created_at?: string
+          address_id: string
+          created_at?: string | null
+          customer_id: string
           flat_rate?: number | null
           id?: string
           install_date?: string | null
@@ -304,13 +318,15 @@ export type Database = {
           notes?: Json | null
           quote_status?: string
           removal_date?: string | null
-          rental_type?: string
+          rental_type: string
           setup_fee?: number | null
-          updated_at?: string
+          updated_at?: string | null
           valid_until?: string | null
         }
         Update: {
-          created_at?: string
+          address_id?: string
+          created_at?: string | null
+          customer_id?: string
           flat_rate?: number | null
           id?: string
           install_date?: string | null
@@ -321,12 +337,26 @@ export type Database = {
           removal_date?: string | null
           rental_type?: string
           setup_fee?: number | null
-          updated_at?: string
+          updated_at?: string | null
           valid_until?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_quotes_lead_id"
+            foreignKeyName: "quotes_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
