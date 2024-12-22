@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { sendAgreement } from "@/app/actions/agreements"
 import { createInvoice, sendInvoice } from "@/app/actions/invoices"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -161,35 +163,6 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error('Error sending agreement:', error);
-      // Don't redirect here, continue with invoice if applicable
-    }
-
-    // Create and send setup fee invoice if applicable
-    if (quote.setup_fee && quote.setup_fee > 0) {
-      try {
-        // First create the invoice
-        const { data: invoice, error: invoiceError } = await supabase
-          .from("invoices")
-          .insert({
-            agreement_id: agreement.id,
-            invoice_type: 'SETUP',
-            amount: quote.setup_fee,
-            paid: false,
-            payment_date: null,
-          })
-          .select()
-          .single()
-
-        if (invoice && !invoiceError) {
-          // Then send it
-          await sendInvoice(invoice.id)
-        } else {
-          console.error('Invoice creation error:', invoiceError);
-        }
-      } catch (error) {
-        console.error('Error sending invoice:', error);
-        // Don't redirect here, the main flow succeeded
-      }
     }
 
     return NextResponse.redirect(

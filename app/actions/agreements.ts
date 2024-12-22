@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { type Tables } from "@/types/database.types"
 import { eSignaturesClient } from '@/lib/esignatures'
+import { sendInvoice } from '@/app/actions/invoices'
 import { 
   type CreateDocumentOptions, 
   type DocumentResponse,
@@ -266,6 +267,53 @@ export async function handleSignatureWebhook(
           signed_date: data.contract.finalized_at,
           contract_pdf_url: data.contract.contract_pdf_url
         }
+
+        // Fetch agreement with quote details to get setup fee
+        const { data: agreement, error: agreementError } = await supabase
+          .from('agreements')
+          .select(`
+            *,
+            quote:quotes(
+              setup_fee
+            )
+          `)
+          .eq('id', agreementId)
+          .single()
+
+        if (agreementError) {
+          console.error('Error fetching agreement:', agreementError)
+          break
+        }
+
+        // Create and send setup fee invoice if applicable
+        if (agreement?.quote?.setup_fee && agreement.quote.setup_fee > 0) {
+          try {
+            // First create the invoice
+            const { data: invoice, error: invoiceError } = await supabase
+              .from('invoices')
+              .insert({
+                agreement_id: agreementId,
+                invoice_type: 'SETUP',
+                amount: agreement.quote.setup_fee,
+                paid: false,
+                payment_date: null,
+              })
+              .select()
+              .single()
+
+            if (invoice && !invoiceError) {
+              // Then send it
+              const sendResult = await sendInvoice(invoice.id)
+              if (!sendResult.success) {
+                console.error('Error sending setup fee invoice:', sendResult.error)
+              }
+            } else {
+              console.error('Setup fee invoice creation error:', invoiceError)
+            }
+          } catch (error) {
+            console.error('Error handling setup fee invoice:', error)
+          }
+        }
         break
       case 'signer-declined-the-signature':
         newStatus = 'DECLINED'
@@ -278,14 +326,14 @@ export async function handleSignatureWebhook(
     }
 
     // Get existing agreement data
-    const { data: agreement } = await supabase
+    const { data: existingAgreement } = await supabase
       .from('agreements')
       .select('notes')
       .eq('id', agreementId)
       .single()
 
     // Parse existing notes or create new object
-    const existingNotes = typeof agreement?.notes === 'object' ? agreement.notes : {}
+    const existingNotes = typeof existingAgreement?.notes === 'object' ? existingAgreement.notes : {}
     
     // Update agreement status and notes
     const { error: updateError } = await supabase

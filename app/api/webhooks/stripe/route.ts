@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { handleStripeWebhook } from '@/app/actions/invoices'
+import { handleSubscriptionWebhook } from '@/app/actions/subscriptions'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -30,7 +31,16 @@ export async function POST(request: Request) {
       )
     }
 
-    // Handle the webhook event
+    // Handle subscription events
+    if (event.type.startsWith('customer.subscription.')) {
+      const result = await handleSubscriptionWebhook(event)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      return NextResponse.json({ success: true })
+    }
+
+    // Handle invoice and payment events
     const result = await handleStripeWebhook(event)
     
     if (!result.success) {

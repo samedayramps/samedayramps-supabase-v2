@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   Wrench,
   Receipt,
+  CreditCard,
 } from "lucide-react"
 
 export const routes = [
@@ -54,6 +55,12 @@ export const routes = [
     icon: Receipt,
     href: "/invoices",
     color: "text-green-700",
+  },
+  {
+    label: "Subscriptions",
+    icon: CreditCard,
+    href: "/subscriptions",
+    color: "text-purple-700",
   },
 ] as const
 
