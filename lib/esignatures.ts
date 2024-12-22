@@ -18,6 +18,7 @@ export interface CreateDocumentOptions {
   metadata?: string;
   custom_webhook_url?: string;
   expires_in_hours?: string;
+  test_mode?: boolean;
 }
 
 export interface DocumentResponse {
@@ -114,9 +115,15 @@ class ESignaturesClientImpl {
   }
 
   async createDocument(options: CreateDocumentOptions): Promise<DocumentResponse> {
+    // Always set test mode to true
+    const payload = {
+      ...options,
+      test_mode: true,
+    };
+
     return this.request<DocumentResponse>('/contracts', {
       method: 'POST',
-      body: JSON.stringify(options),
+      body: JSON.stringify(payload),
     });
   }
 }
