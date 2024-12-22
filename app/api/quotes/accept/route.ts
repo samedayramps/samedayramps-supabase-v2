@@ -60,23 +60,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Creating agreement for quote:', {
+    const agreementData = {
       quote_id: id,
-      setup_fee: quote.setup_fee,
-      monthly_rental_rate: quote.monthly_rental_rate,
       notes: quote.notes,
-    });
+      agreement_status: 'DRAFT'
+    };
+
+    console.log('Creating agreement with data:', agreementData);
 
     // Create agreement
     const { data: agreement, error: agreementError } = await supabase
       .from("agreements")
-      .insert({
-        quote_id: id,
-        setup_fee: quote.setup_fee,
-        monthly_rental_rate: quote.monthly_rental_rate,
-        notes: quote.notes,
-        agreement_status: 'DRAFT'
-      })
+      .insert(agreementData)
       .select()
       .single()
 
