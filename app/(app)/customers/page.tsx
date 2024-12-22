@@ -8,7 +8,10 @@ export default async function CustomersPage() {
   const supabase = await createClient();
   const { data: customers, error } = await supabase
     .from("customers")
-    .select()
+    .select(`
+      *,
+      addresses(*)
+    `)
     .order('created_at', { ascending: false });
 
   if (error) {

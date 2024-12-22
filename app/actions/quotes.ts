@@ -36,15 +36,41 @@ type QuoteData = Pick<
   | "quote_status"
   | "valid_until"
   | "notes"
+  | "rental_type"
 >
 
 export async function createQuote(data: QuoteData) {
   const supabase = await createClient()
   
   try {
+    // Get the customer_id and their address through the lead
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select(`
+        customer_id,
+        customer:customers (
+          addresses (
+            id
+          )
+        )
+      `)
+      .eq('id', data.lead_id)
+      .single()
+
+    if (leadError) throw leadError
+    if (!lead.customer_id) throw new Error('Customer ID not found for lead')
+    if (!lead.customer?.addresses?.[0]?.id) throw new Error('Address not found for customer')
+
+    // Add customer_id and address_id to the quote data
+    const quoteData = {
+      ...data,
+      customer_id: lead.customer_id,
+      address_id: lead.customer.addresses[0].id
+    }
+
     const { error } = await supabase
       .from('quotes')
-      .insert(data)
+      .insert(quoteData)
 
     if (error) throw error
 
@@ -52,7 +78,7 @@ export async function createQuote(data: QuoteData) {
     return { success: true }
   } catch (error) {
     console.error('Error creating quote:', error)
-    return { error: 'Failed to create quote' }
+    return { error: error instanceof Error ? error.message : 'Failed to create quote' }
   }
 }
 
@@ -60,18 +86,53 @@ export async function updateQuote(id: string, data: QuoteData): Promise<void> {
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase
-      .from('quotes')
-      .update(data)
-      .match({ id })
+    // Get the customer_id and their address through the lead if it has changed
+    if (data.lead_id) {
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .select(`
+          customer_id,
+          customer:customers (
+            addresses (
+              id
+            )
+          )
+        `)
+        .eq('id', data.lead_id)
+        .single()
 
-    if (error) throw error
+      if (leadError) throw leadError
+      if (!lead.customer_id) throw new Error('Customer ID not found for lead')
+      if (!lead.customer?.addresses?.[0]?.id) throw new Error('Address not found for customer')
+
+      // Update the quote data with new customer_id and address_id
+      const quoteData = {
+        ...data,
+        customer_id: lead.customer_id,
+        address_id: lead.customer.addresses[0].id
+      }
+
+      const { error } = await supabase
+        .from('quotes')
+        .update(quoteData)
+        .match({ id })
+
+      if (error) throw error
+    } else {
+      // If lead_id hasn't changed, just update the quote data
+      const { error } = await supabase
+        .from('quotes')
+        .update(data)
+        .match({ id })
+
+      if (error) throw error
+    }
 
     revalidatePath('/quotes')
     redirect('/quotes')
   } catch (error) {
     console.error('Error updating quote:', error)
-    throw new Error('Failed to update quote')
+    throw new Error(error instanceof Error ? error.message : 'Failed to update quote')
   }
 }
 
@@ -84,13 +145,11 @@ export async function sendQuote(id: string): Promise<{ success: boolean; error?:
       .from('quotes')
       .select(`
         *,
-        lead:leads(
-          customer:customers(
-            first_name,
-            last_name,
-            email,
-            phone
-          ),
+        customer:customers(
+          first_name,
+          last_name,
+          email,
+          phone,
           addresses(
             formatted_address,
             street_number,
@@ -113,16 +172,16 @@ export async function sendQuote(id: string): Promise<{ success: boolean; error?:
       throw new Error(`Cannot send quote in ${quote.quote_status.toLowerCase()} status`)
     }
 
-    const customerEmail = quote.lead?.customer?.email
+    const customerEmail = quote.customer?.email
     if (!customerEmail) {
       throw new Error('Customer email not found')
     }
 
-    const customerName = `${quote.lead?.customer?.first_name} ${quote.lead?.customer?.last_name}`
-    const customerPhone = quote.lead?.customer?.phone
-    
+    const customerName = `${quote.customer?.first_name} ${quote.customer?.last_name}`
+    const customerPhone = quote.customer?.phone ?? null
+
     // Get address components
-    const address = quote.lead?.addresses?.[0]
+    const address = quote.customer?.addresses?.[0]
     if (!address) {
       throw new Error('Installation address not found')
     }

@@ -15,8 +15,11 @@ export default async function NewAgreementPage({
       monthly_rental_rate,
       setup_fee,
       rental_type,
+      customer_id,
+      address_id,
       lead:leads(
         customer:customers(
+          id,
           first_name,
           last_name
         )

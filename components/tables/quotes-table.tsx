@@ -9,13 +9,28 @@ import { formatCurrency } from "@/lib/utils"
 import { useToast } from "@/components/hooks/use-toast"
 import { useState } from "react"
 
-export type Quote = Tables<"quotes"> & {
+export type Quote = {
+  id: string
+  created_at: string
+  customer_id: string
+  address_id: string
+  flat_rate: number | null
+  install_date: string | null
+  lead_id: string
+  monthly_rental_rate: number
+  notes: any
+  quote_status: string
+  removal_date: string | null
+  rental_type: string
+  setup_fee: number
+  updated_at: string | null
+  valid_until: string | null
   lead?: {
-    customer?: Pick<Tables<"customers">, 
-      | "first_name" 
-      | "last_name"
-    >
-  }
+    customer?: {
+      first_name: string | null
+      last_name: string | null
+    } | null
+  } | null
 }
 
 interface QuotesTableProps {

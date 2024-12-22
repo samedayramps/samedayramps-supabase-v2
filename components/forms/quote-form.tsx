@@ -41,6 +41,8 @@ const quoteFormSchema = z.object({
   quote_status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED'] as const),
   valid_duration: z.enum(VALID_DURATIONS),
   notes: z.string().optional().nullable(),
+  customer_id: z.string().optional(),
+  address_id: z.string().optional(),
 })
 
 type QuoteFormValues = z.infer<typeof quoteFormSchema>
@@ -119,7 +121,7 @@ export function QuoteForm({ initialData, leadId, leads }: QuoteFormProps) {
       const validUntil = getValidUntilDate(values.valid_duration)
       
       // Remove valid_duration from the data sent to the database
-      const { valid_duration, ...quoteData } = values
+      const { valid_duration, customer_id, address_id, ...quoteData } = values
       
       const dataToSave = {
         ...quoteData,

@@ -3,7 +3,8 @@
 import { Input } from "@/components/ui/input"
 import { FormControl } from "@/components/ui/form"
 import { useEffect, useRef, useState } from "react"
-import Script from "next/script"
+import { useDebouncedCallback } from 'use-debounce'
+import { useGoogleMapsLoaded } from "./google-maps-script"
 
 interface AddressAutocompleteProps {
   value?: string
@@ -15,7 +16,7 @@ interface AddressAutocompleteProps {
 }
 
 export function AddressAutocomplete({
-  value,
+  value = '',
   onChange,
   onBlur,
   disabled,
@@ -24,8 +25,14 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false)
+  const isScriptLoaded = useGoogleMapsLoaded()
   const [scriptError, setScriptError] = useState<string | null>(null)
+  const [inputValue, setInputValue] = useState(value)
+
+  // Update local state when prop value changes
+  useEffect(() => {
+    setInputValue(value)
+  }, [value])
 
   useEffect(() => {
     if (!isScriptLoaded || !inputRef.current) return
@@ -39,17 +46,29 @@ export function AddressAutocomplete({
       })
 
       // Add listener for place selection
-      autocompleteRef.current.addListener("place_changed", () => {
+      const placeChangedListener = autocompleteRef.current.addListener("place_changed", () => {
         const place = autocompleteRef.current?.getPlace()
         if (place?.formatted_address) {
+          setInputValue(place.formatted_address)
           onChange(place.formatted_address, place)
         }
       })
 
+      // Prevent form submission on enter
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+        }
+      }
+      inputRef.current.addEventListener('keydown', handleKeyDown)
+
       return () => {
         // Cleanup
-        if (autocompleteRef.current) {
-          google.maps.event.clearInstanceListeners(autocompleteRef.current)
+        if (placeChangedListener) {
+          google.maps.event.removeListener(placeChangedListener)
+        }
+        if (inputRef.current) {
+          inputRef.current.removeEventListener('keydown', handleKeyDown)
         }
       }
     } catch (error) {
@@ -58,13 +77,31 @@ export function AddressAutocomplete({
     }
   }, [isScriptLoaded, onChange])
 
+  const debouncedOnChange = useDebouncedCallback((value: string) => {
+    onChange(value)
+  }, 300)
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value
+    setInputValue(newValue)
+    debouncedOnChange(newValue)
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Only call onBlur if we're not clicking on the suggestions dropdown
+    const isClickingAutocomplete = document.querySelector('.pac-container')?.contains(e.relatedTarget as Node)
+    if (!isClickingAutocomplete && onBlur) {
+      onBlur()
+    }
+  }
+
   if (scriptError) {
     return (
       <Input
         type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
+        value={inputValue}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
         disabled={disabled}
         placeholder={scriptError}
         className={className}
@@ -73,27 +110,18 @@ export function AddressAutocomplete({
   }
 
   return (
-    <>
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        onLoad={() => setIsScriptLoaded(true)}
-        onError={(e) => {
-          console.error('Error loading Google Maps script:', e)
-          setScriptError('Failed to load address autocomplete')
-        }}
+    <FormControl>
+      <Input
+        ref={inputRef}
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
+        disabled={disabled || !isScriptLoaded}
+        placeholder={!isScriptLoaded ? "Loading..." : placeholder}
+        className={className}
+        autoComplete="off"
       />
-      <FormControl>
-        <Input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          disabled={disabled || !isScriptLoaded}
-          placeholder={!isScriptLoaded ? "Loading..." : placeholder}
-          className={className}
-        />
-      </FormControl>
-    </>
+    </FormControl>
   )
 } 

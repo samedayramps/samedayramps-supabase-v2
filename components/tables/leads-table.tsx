@@ -13,7 +13,8 @@ export type Lead = Tables<"leads"> & {
     | "last_name" 
     | "email" 
     | "phone"
-  >
+  > | null
+  address?: Tables<"addresses">[] | null
 }
 
 const columns: ColumnDef<Lead>[] = [

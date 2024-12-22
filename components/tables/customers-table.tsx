@@ -65,7 +65,10 @@ const columns: ColumnDef<Customer>[] = [
       const address = row.original.addresses?.[0]
       return address ? (
         <div>
-          <div>{address.formatted_address}</div>
+          <div>{[
+            address.street_number,
+            address.street_name,
+          ].filter(Boolean).join(' ')}</div>
           <div className="text-sm text-muted-foreground">
             {[
               address.city,

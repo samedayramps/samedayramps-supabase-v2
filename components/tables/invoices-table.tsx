@@ -17,10 +17,10 @@ export type Invoice = Tables<"invoices"> & {
           | "first_name" 
           | "last_name"
           | "email"
-        >
-      }
-    }
-  }
+        > | null
+      } | null
+    } | null
+  } | null
 }
 
 interface InvoicesTableProps {

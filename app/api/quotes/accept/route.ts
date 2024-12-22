@@ -54,6 +54,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get address for the customer
+    if (!quote.lead?.customer?.id) {
+      console.error('Customer ID missing');
+      return NextResponse.redirect(
+        new URL(`/quote-accepted?id=${id}&error=Customer data missing`, request.url)
+      )
+    }
+
     const { data: addresses, error: addressError } = await supabase
       .from("addresses")
       .select("*")

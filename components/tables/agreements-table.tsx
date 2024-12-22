@@ -19,9 +19,9 @@ export type Agreement = Tables<"agreements"> & {
         | "first_name" 
         | "last_name"
         | "email"
-      >
-    }
-  }
+      > | null
+    } | null
+  } | null
 }
 
 interface AgreementsTableProps {

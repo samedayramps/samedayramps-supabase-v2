@@ -13,7 +13,7 @@ export type Database = {
         Row: {
           city: string | null
           country: string | null
-          created_at: string | null
+          created_at: string
           customer_id: string
           formatted_address: string
           id: string
@@ -29,7 +29,7 @@ export type Database = {
         Insert: {
           city?: string | null
           country?: string | null
-          created_at?: string | null
+          created_at?: string
           customer_id: string
           formatted_address: string
           id?: string
@@ -45,7 +45,7 @@ export type Database = {
         Update: {
           city?: string | null
           country?: string | null
-          created_at?: string | null
+          created_at?: string
           customer_id?: string
           formatted_address?: string
           id?: string
@@ -72,7 +72,7 @@ export type Database = {
         Row: {
           address_id: string
           agreement_status: string
-          created_at: string | null
+          created_at: string
           customer_id: string
           id: string
           notes: Json | null
@@ -83,7 +83,7 @@ export type Database = {
         Insert: {
           address_id: string
           agreement_status?: string
-          created_at?: string | null
+          created_at?: string
           customer_id: string
           id?: string
           notes?: Json | null
@@ -94,7 +94,7 @@ export type Database = {
         Update: {
           address_id?: string
           agreement_status?: string
-          created_at?: string | null
+          created_at?: string
           customer_id?: string
           id?: string
           notes?: Json | null
@@ -128,31 +128,31 @@ export type Database = {
       }
       customers: {
         Row: {
-          created_at: string | null
+          created_at: string
           email: string | null
-          first_name: string | null
+          first_name: string
           id: string
-          last_name: string | null
+          last_name: string
           notes: Json | null
           phone: string | null
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           email?: string | null
-          first_name?: string | null
+          first_name: string
           id?: string
-          last_name?: string | null
+          last_name: string
           notes?: Json | null
           phone?: string | null
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           email?: string | null
-          first_name?: string | null
+          first_name?: string
           id?: string
-          last_name?: string | null
+          last_name?: string
           notes?: Json | null
           phone?: string | null
           updated_at?: string | null
@@ -162,7 +162,7 @@ export type Database = {
       installations: {
         Row: {
           agreement_id: string
-          created_at: string | null
+          created_at: string
           id: string
           installation_date: string | null
           installation_photos: Json | null
@@ -172,7 +172,7 @@ export type Database = {
         }
         Insert: {
           agreement_id: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           installation_date?: string | null
           installation_photos?: Json | null
@@ -182,7 +182,7 @@ export type Database = {
         }
         Update: {
           agreement_id?: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           installation_date?: string | null
           installation_photos?: Json | null
@@ -203,8 +203,8 @@ export type Database = {
       invoices: {
         Row: {
           agreement_id: string
-          amount: number | null
-          created_at: string | null
+          amount: number
+          created_at: string
           id: string
           invoice_type: string
           paid: boolean
@@ -213,8 +213,8 @@ export type Database = {
         }
         Insert: {
           agreement_id: string
-          amount?: number | null
-          created_at?: string | null
+          amount?: number
+          created_at?: string
           id?: string
           invoice_type: string
           paid?: boolean
@@ -223,8 +223,8 @@ export type Database = {
         }
         Update: {
           agreement_id?: string
-          amount?: number | null
-          created_at?: string | null
+          amount?: number
+          created_at?: string
           id?: string
           invoice_type?: string
           paid?: boolean
@@ -243,8 +243,8 @@ export type Database = {
       }
       leads: {
         Row: {
-          created_at: string | null
-          customer_id: string
+          created_at: string
+          customer_id: string | null
           id: string
           mobility_type: string | null
           notes: Json | null
@@ -255,8 +255,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          customer_id: string
+          created_at?: string
+          customer_id?: string | null
           id?: string
           mobility_type?: string | null
           notes?: Json | null
@@ -267,8 +267,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          customer_id?: string
+          created_at?: string
+          customer_id?: string | null
           id?: string
           mobility_type?: string | null
           notes?: Json | null
@@ -291,52 +291,52 @@ export type Database = {
       quotes: {
         Row: {
           address_id: string
-          created_at: string | null
+          created_at: string
           customer_id: string
           flat_rate: number | null
           id: string
           install_date: string | null
           lead_id: string
-          monthly_rental_rate: number | null
+          monthly_rental_rate: number
           notes: Json | null
           quote_status: string
           removal_date: string | null
           rental_type: string
-          setup_fee: number | null
+          setup_fee: number
           updated_at: string | null
           valid_until: string | null
         }
         Insert: {
           address_id: string
-          created_at?: string | null
+          created_at?: string
           customer_id: string
           flat_rate?: number | null
           id?: string
           install_date?: string | null
           lead_id: string
-          monthly_rental_rate?: number | null
+          monthly_rental_rate?: number
           notes?: Json | null
           quote_status?: string
           removal_date?: string | null
           rental_type: string
-          setup_fee?: number | null
+          setup_fee?: number
           updated_at?: string | null
           valid_until?: string | null
         }
         Update: {
           address_id?: string
-          created_at?: string | null
+          created_at?: string
           customer_id?: string
           flat_rate?: number | null
           id?: string
           install_date?: string | null
           lead_id?: string
-          monthly_rental_rate?: number | null
+          monthly_rental_rate?: number
           notes?: Json | null
           quote_status?: string
           removal_date?: string | null
           rental_type?: string
-          setup_fee?: number | null
+          setup_fee?: number
           updated_at?: string | null
           valid_until?: string | null
         }

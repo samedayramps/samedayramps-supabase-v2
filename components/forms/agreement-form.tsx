@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/hooks/use-toast"
 import { type Tables } from "@/types/database.types"
@@ -32,6 +32,8 @@ const agreementFormSchema = z.object({
   quote_id: z.string().min(1, "Quote is required"),
   agreement_status: z.enum(['DRAFT', 'SENT', 'SIGNED', 'DECLINED', 'EXPIRED'] as const),
   notes: z.any().optional().nullable(),
+  customer_id: z.string().min(1, "Customer is required"),
+  address_id: z.string().min(1, "Address is required"),
 })
 
 type AgreementFormValues = z.infer<typeof agreementFormSchema>
@@ -44,8 +46,11 @@ type Quote = {
   monthly_rental_rate: number | null
   setup_fee: number | null
   rental_type: string
+  customer_id: string
+  address_id: string
   lead?: {
     customer?: {
+      id: string
       first_name: string | null
       last_name: string | null
     } | null
@@ -69,8 +74,21 @@ export function AgreementForm({ initialData, quoteId, quotes }: AgreementFormPro
       quote_id: initialData?.quote_id ?? quoteId ?? "",
       agreement_status: (initialData?.agreement_status as any) ?? 'DRAFT',
       notes: initialData?.notes ?? null,
+      customer_id: initialData?.customer_id ?? "",
+      address_id: initialData?.address_id ?? "",
     },
   })
+
+  // Watch quote_id to update customer_id and address_id
+  const selectedQuoteId = form.watch('quote_id')
+  const selectedQuote = quotes.find(q => q.id === selectedQuoteId)
+  
+  useEffect(() => {
+    if (selectedQuote) {
+      form.setValue('customer_id', selectedQuote.customer_id)
+      form.setValue('address_id', selectedQuote.address_id)
+    }
+  }, [selectedQuote, form])
 
   async function onSubmit(values: AgreementFormValues) {
     setIsSubmitting(true)
