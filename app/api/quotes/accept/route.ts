@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('token')
 
     if (!id || !token) {
+      console.error('Missing parameters:', { id, token });
       return NextResponse.redirect(
         new URL(`/quote-accepted?id=${id}&error=Invalid request parameters`, request.url)
       )
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
     // Verify the token matches the quote ID
     const expectedToken = Buffer.from(id).toString('base64')
     if (token !== expectedToken) {
+      console.error('Token mismatch:', { token, expectedToken });
       return NextResponse.redirect(
         new URL(`/quote-accepted?id=${id}&error=Invalid token`, request.url)
       )
@@ -33,6 +35,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (quoteError || !quote) {
+      console.error('Quote fetch error:', quoteError);
       return NextResponse.redirect(
         new URL(`/quote-accepted?id=${id}&error=Quote not found`, request.url)
       )
@@ -51,10 +54,21 @@ export async function GET(request: NextRequest) {
       .eq('id', id)
 
     if (updateError) {
+      console.error('Quote update error:', updateError);
       return NextResponse.redirect(
         new URL(`/quote-accepted?id=${id}&error=Failed to update quote status`, request.url)
       )
     }
+
+    console.log('Creating agreement for quote:', {
+      quote_id: id,
+      lead_id: quote.lead_id,
+      setup_fee: quote.setup_fee,
+      monthly_rental_rate: quote.monthly_rental_rate,
+      install_date: quote.install_date,
+      removal_date: quote.removal_date,
+      notes: quote.notes,
+    });
 
     // Create agreement
     const { data: agreement, error: agreementError } = await supabase
@@ -67,21 +81,31 @@ export async function GET(request: NextRequest) {
         install_date: quote.install_date,
         removal_date: quote.removal_date,
         notes: quote.notes,
+        agreement_status: 'DRAFT'
       })
       .select()
       .single()
 
     if (agreementError || !agreement) {
+      console.error('Agreement creation error:', agreementError);
       return NextResponse.redirect(
-        new URL(`/quote-accepted?id=${id}&error=Failed to create agreement`, request.url)
+        new URL(`/quote-accepted?id=${id}&error=Failed to create agreement: ${agreementError?.message}`, request.url)
       )
     }
 
+    console.log('Agreement created:', agreement);
+
     // Try to send agreement
     try {
-      await sendAgreement(agreement.id)
+      const sendResult = await sendAgreement(agreement.id)
+      if (!sendResult.success) {
+        console.error('Agreement send error:', sendResult.error);
+        return NextResponse.redirect(
+          new URL(`/quote-accepted?id=${id}&error=Failed to send agreement: ${sendResult.error}`, request.url)
+        )
+      }
     } catch (error) {
-      console.error('Error sending agreement:', error)
+      console.error('Error sending agreement:', error);
       // Don't redirect here, continue with invoice if applicable
     }
 
@@ -104,9 +128,11 @@ export async function GET(request: NextRequest) {
         if (invoice && !invoiceError) {
           // Then send it
           await sendInvoice(invoice.id)
+        } else {
+          console.error('Invoice creation error:', invoiceError);
         }
       } catch (error) {
-        console.error('Error sending invoice:', error)
+        console.error('Error sending invoice:', error);
         // Don't redirect here, the main flow succeeded
       }
     }
@@ -116,10 +142,10 @@ export async function GET(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('Error accepting quote:', error)
+    console.error('Error accepting quote:', error);
     const id = request.nextUrl.searchParams.get('id')
     return NextResponse.redirect(
-      new URL(`/quote-accepted?id=${id}&error=An unexpected error occurred`, request.url)
+      new URL(`/quote-accepted?id=${id}&error=An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`, request.url)
     )
   }
 } 
