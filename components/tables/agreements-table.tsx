@@ -1,13 +1,18 @@
 "use client"
 
 import { type Tables } from "@/types/database.types"
-import { DataTable, DataTableRowActions } from "@/components/common/data-table"
-import { ColumnDef } from "@tanstack/react-table"
+import { DataTable } from "@/components/common/data-table"
+import { DataTableColumnHeader } from "@/components/common/data-table-column-header"
+import { DataTableRowActions } from "@/components/common/data-table-row-actions"
+import { ColumnDef, Row } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { deleteAgreement, sendAgreement } from "@/app/actions/agreements"
 import { formatCurrency } from "@/lib/utils"
 import { useToast } from "@/components/hooks/use-toast"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export type Agreement = Tables<"agreements"> & {
   quote?: {
@@ -19,6 +24,7 @@ export type Agreement = Tables<"agreements"> & {
         | "first_name" 
         | "last_name"
         | "email"
+        | "id"
       > | null
     } | null
   } | null
@@ -30,6 +36,7 @@ interface AgreementsTableProps {
 
 export function AgreementsTable({ data }: AgreementsTableProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [sendingAgreementId, setSendingAgreementId] = useState<string | null>(null)
 
   const handleSendAgreement = async (id: string) => {
@@ -60,26 +67,12 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     }
   }
 
-  const handleDeleteAgreement = async (id: string) => {
-    try {
-      await deleteAgreement(id)
-      toast({
-        title: "Success",
-        description: "Agreement deleted successfully",
-      })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete agreement",
-      })
-    }
-  }
-
   const columns: ColumnDef<Agreement>[] = [
     {
       id: "customerName",
-      header: "Customer",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Customer" />
+      ),
       cell: ({ row }) => {
         const firstName = row.original.quote?.lead?.customer?.first_name
         const lastName = row.original.quote?.lead?.customer?.last_name
@@ -90,7 +83,9 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     },
     {
       accessorKey: "agreement_status",
-      header: "Status",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
       cell: ({ row }) => {
         const status = row.getValue("agreement_status") as string
         return (
@@ -111,7 +106,9 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     },
     {
       id: "rentalType",
-      header: "Rental Type",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Rental Type" />
+      ),
       cell: ({ row }) => {
         const rentalType = row.original.quote?.rental_type
         return rentalType === 'ONE_TIME' ? 'One-Time Rental' : 'Recurring Rental'
@@ -119,7 +116,9 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     },
     {
       id: "monthlyRate",
-      header: "Monthly Rate",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Monthly Rate" />
+      ),
       cell: ({ row }) => {
         const amount = row.original.quote?.monthly_rental_rate
         return amount ? formatCurrency(amount) : null
@@ -127,7 +126,9 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     },
     {
       id: "setupFee",
-      header: "Setup Fee",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Setup Fee" />
+      ),
       cell: ({ row }) => {
         const amount = row.original.quote?.setup_fee
         return amount ? formatCurrency(amount) : null
@@ -135,7 +136,9 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     },
     {
       accessorKey: "signed_date",
-      header: "Signed Date",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Signed Date" />
+      ),
       cell: ({ row }) => {
         const date = row.getValue("signed_date")
         return date ? new Date(date as string).toLocaleDateString() : null
@@ -143,7 +146,9 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     },
     {
       accessorKey: "created_at",
-      header: "Created",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Created" />
+      ),
       cell: ({ row }) => {
         return new Date(row.getValue("created_at")).toLocaleDateString()
       },
@@ -151,38 +156,53 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
     {
       id: "actions",
       cell: ({ row }) => {
-        const status = row.original.agreement_status;
-        const isSent = status === 'SENT';
-        
+        const agreement = row.original
+        const isSent = agreement.agreement_status === 'SENT'
+        const isLoading = sendingAgreementId === agreement.id
+        const isDisabled = 
+          isLoading || 
+          agreement.agreement_status === 'SIGNED' ||
+          agreement.agreement_status === 'DECLINED' ||
+          agreement.agreement_status === 'EXPIRED'
+
         return (
-          <DataTableRowActions 
-            row={row.original} 
-            editHref={`/agreements/${row.original.id}/edit`}
-            deleteAction={handleDeleteAgreement}
-            extraActions={[
-              {
-                label: isSent ? "Resend Agreement" : "Send for Signature",
-                onClick: () => handleSendAgreement(row.original.id),
-                disabled: 
-                  sendingAgreementId === row.original.id || 
-                  row.original.agreement_status === 'SIGNED' ||
-                  row.original.agreement_status === 'DECLINED' ||
-                  row.original.agreement_status === 'EXPIRED',
-                loading: sendingAgreementId === row.original.id,
-              }
-            ]}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSendAgreement(agreement.id);
+              }}
+              disabled={isDisabled}
+              className="h-8"
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSent ? "Resend Agreement" : "Send for Signature"}
+            </Button>
+            <DataTableRowActions
+              editHref={`/agreements/${agreement.id}/edit`}
+              deleteAction={async () => {
+                await deleteAgreement(agreement.id)
+              }}
+            />
+          </div>
         )
       },
     },
   ]
 
   return (
-    <DataTable 
+    <DataTable<Agreement>
       columns={columns} 
       data={data} 
       filterColumn="customerName"
       filterPlaceholder="Filter by customer name..."
+      onRowClick={(row) => {
+        if (row.quote?.lead?.customer?.id) {
+          router.push(`/customers/${row.quote.lead.customer.id}`)
+        }
+      }}
     />
   )
 } 

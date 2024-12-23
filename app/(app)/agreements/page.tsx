@@ -16,6 +16,7 @@ export default async function AgreementsPage() {
         rental_type,
         lead:leads(
           customer:customers(
+            id,
             first_name,
             last_name,
             email

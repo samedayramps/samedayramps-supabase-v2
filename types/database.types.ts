@@ -133,7 +133,6 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
-          notes: Json | null
           phone: string | null
           updated_at: string | null
         }
@@ -143,7 +142,6 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
-          notes?: Json | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -153,7 +151,6 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
-          notes?: Json | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -322,6 +319,41 @@ export type Database = {
           },
         ]
       }
+      notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          customer_id: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          customer_id: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           brand: string | null
@@ -371,6 +403,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       quotes: {
         Row: {

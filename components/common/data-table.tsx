@@ -13,6 +13,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  Row,
 } from "@tanstack/react-table"
 import {
   Table,
@@ -43,32 +44,46 @@ import {
   Send,
   Edit,
   Trash,
+  Filter,
 } from "lucide-react"
 import Link from "next/link"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { useToast } from "@/components/hooks/use-toast"
-import { DotsHorizontalIcon } from "@radix-ui/react-icons"
-import { Row } from "@tanstack/react-table"
+import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
+interface DataTableProps<TData> {
+  columns: ColumnDef<TData, any>[]
   data: TData[]
   filterColumn?: string
   filterPlaceholder?: string
   deleteAction?: (id: string) => Promise<void>
+  onRowClick?: (row: TData) => void
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData>({
   columns,
   data,
   filterColumn,
   filterPlaceholder = "Filter...",
   deleteAction,
-}: DataTableProps<TData, TValue>) {
+  onRowClick,
+}: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Default mobile-first column visibility
+  React.useEffect(() => {
+    const defaultHidden = columns.reduce((acc, column) => {
+      if (column.id === "actions" || column.id === filterColumn) return acc
+      return { ...acc, [column.id as string]: false }
+    }, {})
+    
+    setColumnVisibility(defaultHidden)
+  }, [columns, filterColumn])
 
   const table = useReactTable({
     data,
@@ -90,25 +105,41 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4 gap-2">
-        {filterColumn && (
-          <Input
-            placeholder={filterPlaceholder}
-            value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn(filterColumn)?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        )}
+    <div className="w-full space-y-4">
+      {/* Mobile-optimized filters */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {filterColumn && (
+            <div className="relative w-full sm:w-[300px]">
+              <Input
+                placeholder={filterPlaceholder}
+                value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn(filterColumn)?.setFilterValue(event.target.value)
+                }
+                className="w-full"
+              />
+            </div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 sm:hidden"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline" className="hidden sm:flex ml-auto">
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+            <DropdownMenuSeparator />
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
@@ -129,21 +160,53 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Mobile filters panel */}
+      {showFilters && (
+        <div className="sm:hidden p-4 border rounded-lg bg-background space-y-4">
+          <h4 className="font-medium">Visible Columns</h4>
+          <div className="grid grid-cols-2 gap-4">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <label
+                    key={column.id}
+                    className="flex items-center space-x-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={column.getIsVisible()}
+                      onChange={(e) => column.toggleVisibility(!!e.target.checked)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="capitalize text-sm">{column.id}</span>
+                  </label>
+                )
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Responsive table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -153,10 +216,26 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => onRowClick?.(row.original)}
+                  className={cn(
+                    "group",
+                    onRowClick && "cursor-pointer hover:bg-muted/50"
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <TableCell 
+                      key={cell.id}
+                      onClick={(e) => {
+                        // Stop propagation if this is an actions cell
+                        if (cell.column.id === 'actions') {
+                          e.stopPropagation();
+                        }
+                      }}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -174,44 +253,38 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+
+      {/* Mobile-optimized pagination */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-center text-sm font-medium">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -226,7 +299,7 @@ interface ExtraAction {
 }
 
 export interface DataTableRowActionsProps<TData> {
-  row: TData;
+  row: TData & { id: string };
   editHref?: string;
   deleteAction?: (id: string) => Promise<void>;
   extraActions?: ExtraAction[];
@@ -305,8 +378,8 @@ export function DataTableRowActions<TData>({
         description="Are you sure you want to delete this item? This action cannot be undone."
         confirmText="Delete"
         onConfirm={async () => {
-          if (deleteAction) {
-            await deleteAction((row as any).id)
+          if (deleteAction && row.id) {
+            await deleteAction(row.id)
             setShowDeleteConfirm(false)
           }
         }}

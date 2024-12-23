@@ -12,6 +12,7 @@ export default async function QuotesPage() {
       *,
       lead:leads(
         customer:customers(
+          id,
           first_name,
           last_name
         )

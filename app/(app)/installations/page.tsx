@@ -14,6 +14,7 @@ export default async function InstallationsPage() {
         quote:quotes(
           lead:leads(
             customer:customers(
+              id,
               first_name,
               last_name
             )

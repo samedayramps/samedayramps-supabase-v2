@@ -1,13 +1,18 @@
 "use client"
 
 import { type Tables } from "@/types/database.types"
-import { DataTable, DataTableRowActions } from "@/components/common/data-table"
+import { DataTable } from "@/components/common/data-table"
+import { DataTableColumnHeader } from "@/components/common/data-table-column-header"
+import { DataTableRowActions } from "@/components/common/data-table-row-actions"
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { deleteInvoice, sendInvoice } from "@/app/actions/invoices"
 import { formatCurrency } from "@/lib/utils"
 import { useToast } from "@/components/hooks/use-toast"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export type Invoice = Tables<"invoices"> & {
   agreement?: {
@@ -17,6 +22,7 @@ export type Invoice = Tables<"invoices"> & {
           | "first_name" 
           | "last_name"
           | "email"
+          | "id"
         > | null
       } | null
     } | null
@@ -29,6 +35,7 @@ interface InvoicesTableProps {
 
 export function InvoicesTable({ data }: InvoicesTableProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null)
 
   const handleSendInvoice = async (id: string) => {
@@ -59,26 +66,12 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     }
   }
 
-  const handleDeleteInvoice = async (id: string) => {
-    try {
-      await deleteInvoice(id)
-      toast({
-        title: "Success",
-        description: "Invoice deleted successfully",
-      })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete invoice",
-      })
-    }
-  }
-
   const columns: ColumnDef<Invoice>[] = [
     {
       id: "customerName",
-      header: "Customer",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Customer" />
+      ),
       cell: ({ row }) => {
         const firstName = row.original.agreement?.quote?.lead?.customer?.first_name
         const lastName = row.original.agreement?.quote?.lead?.customer?.last_name
@@ -89,7 +82,9 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     },
     {
       accessorKey: "amount",
-      header: "Amount",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Amount" />
+      ),
       cell: ({ row }) => {
         const amount = row.getValue("amount")
         return amount ? formatCurrency(amount as number) : null
@@ -97,7 +92,9 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     },
     {
       accessorKey: "invoice_type",
-      header: "Type",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Type" />
+      ),
       cell: ({ row }) => {
         const type = row.getValue("invoice_type") as string
         return (
@@ -112,7 +109,9 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     },
     {
       accessorKey: "paid",
-      header: "Status",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
       cell: ({ row }) => {
         const paid = row.getValue("paid") as boolean
         return (
@@ -126,7 +125,9 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     },
     {
       accessorKey: "payment_date",
-      header: "Payment Date",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Payment Date" />
+      ),
       cell: ({ row }) => {
         const date = row.getValue("payment_date")
         return date ? new Date(date as string).toLocaleDateString() : null
@@ -134,7 +135,9 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     },
     {
       accessorKey: "created_at",
-      header: "Created",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Created" />
+      ),
       cell: ({ row }) => {
         return new Date(row.getValue("created_at")).toLocaleDateString()
       },
@@ -142,24 +145,29 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
     {
       id: "actions",
       cell: ({ row }) => {
-        const paid = row.original.paid;
-        
+        const invoice = row.original
+        const isLoading = sendingInvoiceId === invoice.id
+        const isDisabled = isLoading || invoice.paid
+
         return (
-          <DataTableRowActions 
-            row={row.original} 
-            editHref={`/invoices/${row.original.id}/edit`}
-            deleteAction={handleDeleteInvoice}
-            extraActions={[
-              {
-                label: "Send Payment Link",
-                onClick: () => handleSendInvoice(row.original.id),
-                disabled: 
-                  sendingInvoiceId === row.original.id || 
-                  paid,
-                loading: sendingInvoiceId === row.original.id,
-              }
-            ]}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSendInvoice(invoice.id)}
+              disabled={isDisabled}
+              className="h-8"
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Payment Link
+            </Button>
+            <DataTableRowActions
+              editHref={`/invoices/${invoice.id}/edit`}
+              deleteAction={async () => {
+                await deleteInvoice(invoice.id)
+              }}
+            />
+          </div>
         )
       },
     },
@@ -171,6 +179,11 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
       data={data} 
       filterColumn="customerName"
       filterPlaceholder="Filter by customer name..."
+      onRowClick={(row) => {
+        if (row.agreement?.quote?.lead?.customer?.id) {
+          router.push(`/customers/${row.agreement.quote.lead.customer.id}`)
+        }
+      }}
     />
   )
 } 

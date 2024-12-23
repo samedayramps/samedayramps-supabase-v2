@@ -1,13 +1,18 @@
 "use client"
 
 import { type Tables } from "@/types/database.types"
-import { DataTable, DataTableRowActions } from "@/components/common/data-table"
-import { ColumnDef } from "@tanstack/react-table"
+import { DataTable } from "@/components/common/data-table"
+import { DataTableColumnHeader } from "@/components/common/data-table-column-header"
+import { DataTableRowActions } from "@/components/common/data-table-row-actions"
+import { ColumnDef, Row } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { deleteQuote, sendQuote } from "@/app/actions/quotes"
 import { formatCurrency } from "@/lib/utils"
 import { useToast } from "@/components/hooks/use-toast"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export type Quote = {
   id: string
@@ -27,6 +32,7 @@ export type Quote = {
   valid_until: string | null
   lead?: {
     customer?: {
+      id: string
       first_name: string | null
       last_name: string | null
     } | null
@@ -39,6 +45,7 @@ interface QuotesTableProps {
 
 export function QuotesTable({ data }: QuotesTableProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [sendingQuoteId, setSendingQuoteId] = useState<string | null>(null)
 
   const handleSendQuote = async (id: string) => {
@@ -69,26 +76,12 @@ export function QuotesTable({ data }: QuotesTableProps) {
     }
   }
 
-  const handleDeleteQuote = async (id: string) => {
-    try {
-      await deleteQuote(id)
-      toast({
-        title: "Success",
-        description: "Quote deleted successfully",
-      })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete quote",
-      })
-    }
-  }
-
   const columns: ColumnDef<Quote>[] = [
     {
       id: "customerName",
-      header: "Customer",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Customer" />
+      ),
       cell: ({ row }) => {
         const firstName = row.original.lead?.customer?.first_name
         const lastName = row.original.lead?.customer?.last_name
@@ -99,7 +92,9 @@ export function QuotesTable({ data }: QuotesTableProps) {
     },
     {
       accessorKey: "monthly_rental_rate",
-      header: "Monthly Rate",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Monthly Rate" />
+      ),
       cell: ({ row }) => {
         const amount = row.getValue("monthly_rental_rate")
         return amount ? formatCurrency(amount as number) : null
@@ -107,7 +102,9 @@ export function QuotesTable({ data }: QuotesTableProps) {
     },
     {
       accessorKey: "setup_fee",
-      header: "Setup Fee",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Setup Fee" />
+      ),
       cell: ({ row }) => {
         const amount = row.getValue("setup_fee")
         return amount ? formatCurrency(amount as number) : null
@@ -115,7 +112,9 @@ export function QuotesTable({ data }: QuotesTableProps) {
     },
     {
       accessorKey: "quote_status",
-      header: "Status",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
       cell: ({ row }) => {
         const status = row.getValue("quote_status") as string
         return (
@@ -135,7 +134,9 @@ export function QuotesTable({ data }: QuotesTableProps) {
     },
     {
       accessorKey: "valid_until",
-      header: "Valid Until",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Valid Until" />
+      ),
       cell: ({ row }) => {
         const date = row.getValue("valid_until")
         return date ? new Date(date as string).toLocaleDateString() : null
@@ -143,7 +144,9 @@ export function QuotesTable({ data }: QuotesTableProps) {
     },
     {
       accessorKey: "created_at",
-      header: "Created",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Created" />
+      ),
       cell: ({ row }) => {
         return new Date(row.getValue("created_at")).toLocaleDateString()
       },
@@ -151,37 +154,48 @@ export function QuotesTable({ data }: QuotesTableProps) {
     {
       id: "actions",
       cell: ({ row }) => {
-        const status = row.original.quote_status;
-        const isSent = status === 'SENT';
-        
+        const quote = row.original
+        const isLoading = sendingQuoteId === quote.id
+        const isDisabled = isLoading || quote.quote_status === 'ACCEPTED'
+
         return (
-          <DataTableRowActions 
-            row={row.original} 
-            editHref={`/quotes/${row.original.id}/edit`}
-            deleteAction={handleDeleteQuote}
-            extraActions={[
-              {
-                label: isSent ? "Resend Quote" : "Send Quote",
-                onClick: () => handleSendQuote(row.original.id),
-                disabled: 
-                  sendingQuoteId === row.original.id || 
-                  row.original.quote_status === 'ACCEPTED' ||
-                  row.original.quote_status === 'REJECTED',
-                loading: sendingQuoteId === row.original.id,
-              }
-            ]}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSendQuote(quote.id);
+              }}
+              disabled={isDisabled}
+              className="h-8"
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {quote.quote_status === 'SENT' ? "Resend Quote" : "Send Quote"}
+            </Button>
+            <DataTableRowActions
+              editHref={`/quotes/${quote.id}/edit`}
+              deleteAction={async () => {
+                await deleteQuote(quote.id)
+              }}
+            />
+          </div>
         )
       },
     },
   ]
 
   return (
-    <DataTable 
+    <DataTable<Quote>
       columns={columns} 
       data={data} 
       filterColumn="customerName"
       filterPlaceholder="Filter by customer name..."
+      onRowClick={(row) => {
+        if (row.lead?.customer?.id) {
+          router.push(`/customers/${row.lead.customer.id}`)
+        }
+      }}
     />
   )
 } 

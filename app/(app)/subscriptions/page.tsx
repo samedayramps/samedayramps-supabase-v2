@@ -17,6 +17,7 @@ export default async function SubscriptionsPage() {
           rental_type,
           lead:leads(
             customer:customers(
+              id,
               first_name,
               last_name,
               email

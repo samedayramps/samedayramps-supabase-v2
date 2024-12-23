@@ -11,6 +11,7 @@ export default async function LeadsPage() {
     .select(`
       *,
       customer:customers(
+        id,
         first_name,
         last_name,
         email,

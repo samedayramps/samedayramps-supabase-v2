@@ -1,4 +1,4 @@
-import { createClient } from "@/app/supabase/server"
+import { createClient } from "@/utils/supabase/server"
 import { UserNav } from "./user-nav"
 
 export async function AuthHeader() {
