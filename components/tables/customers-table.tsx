@@ -16,6 +16,18 @@ interface CustomersTableProps {
   data: Customer[]
 }
 
+// Client-side wrapper for delete action
+function DeleteAction({ customerId }: { customerId: string }) {
+  return (
+    <DataTableRowActions
+      editHref={`/customers/${customerId}/edit`}
+      deleteAction={async () => {
+        await deleteCustomer(customerId)
+      }}
+    />
+  )
+}
+
 export function CustomersTable({ data }: CustomersTableProps) {
   const columns: ColumnDef<Customer>[] = [
     {
@@ -112,14 +124,7 @@ export function CustomersTable({ data }: CustomersTableProps) {
       id: "actions",
       cell: ({ row }) => {
         const customer = row.original
-        return (
-          <DataTableRowActions
-            editHref={`/customers/${customer.id}/edit`}
-            deleteAction={async () => {
-              await deleteCustomer(customer.id)
-            }}
-          />
-        )
+        return <DeleteAction customerId={customer.id} />
       },
     },
   ]
