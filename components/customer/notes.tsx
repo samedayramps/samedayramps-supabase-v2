@@ -12,7 +12,7 @@ interface NotesProps {
 export function Notes({ customerId }: NotesProps) {
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const handleNoteAdded = () => {
+  const handleNoteChange = () => {
     setRefreshKey((prev) => prev + 1)
   }
 
@@ -22,8 +22,8 @@ export function Notes({ customerId }: NotesProps) {
         <CardTitle>Notes</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <NotesForm customerId={customerId} onNoteAdded={handleNoteAdded} />
-        <NotesList customerId={customerId} key={refreshKey} />
+        <NotesForm customerId={customerId} onNoteAdded={handleNoteChange} />
+        <NotesList customerId={customerId} key={refreshKey} onNoteDeleted={handleNoteChange} />
       </CardContent>
     </Card>
   )

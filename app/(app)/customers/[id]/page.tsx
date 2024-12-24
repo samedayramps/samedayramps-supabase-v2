@@ -1,4 +1,3 @@
-import { CustomerInfo } from "@/components/customer/customer-info"
 import { JobProgress } from "@/components/customer/job-progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LeadsTable } from "@/components/tables/leads-table"
@@ -10,14 +9,36 @@ import { SubscriptionsTable } from "@/components/tables/subscriptions-table"
 import { notFound } from "next/navigation"
 import { getCustomerWithDetails, extractRelatedData } from "@/lib/queries/customer"
 import { Button } from "@/components/ui/button"
-import { Phone } from "lucide-react"
+import { Mail, Phone, MapPin, Edit, Copy } from "lucide-react"
 import Link from "next/link"
+import { Breadcrumbs } from "@/components/common/breadcrumbs"
+import { Notes } from "@/components/customer/notes"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-export default async function CustomerPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+interface CustomerPageProps {
+  params: {
+    id: string
+  }
+}
+
+function CopyButton({ text }: { text: string }) {
+  "use client"
+  
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-6 w-6"
+      onClick={() => {
+        navigator.clipboard.writeText(text)
+      }}
+    >
+      <Copy className="h-3 w-3" />
+    </Button>
+  )
+}
+
+export default async function CustomerPage({ params }: CustomerPageProps) {
   const customer = await getCustomerWithDetails(params.id)
 
   if (!customer) {
@@ -34,27 +55,129 @@ export default async function CustomerPage({
     subscriptions
   } = extractRelatedData(customer)
 
+  const address = customer.addresses?.[0]
+  const breadcrumbs = [
+    { label: "Customers", href: "/customers" },
+    { label: `${customer.first_name} ${customer.last_name}` }
+  ]
+
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={breadcrumbs} />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Customer Details</h1>
-        <Link href={`/customers/${customer.id}/call`}>
-          <Button>
-            <Phone className="h-4 w-4 mr-2" />
-            Call Customer
-          </Button>
-        </Link>
+        <h1 className="text-3xl font-bold">{`${customer.first_name} ${customer.last_name}`}</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
+            {customer.email && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <Mail className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={`mailto:${customer.email}`}
+                      className="text-sm hover:text-foreground transition-colors"
+                    >
+                      {customer.email}
+                    </a>
+                    <CopyButton text={customer.email} />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {customer.phone && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={`tel:${customer.phone}`}
+                      className="text-sm hover:text-foreground transition-colors"
+                    >
+                      {customer.phone}
+                    </a>
+                    <CopyButton text={customer.phone} />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {address && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm">
+                      <div>
+                        {[
+                          address.street_number,
+                          address.street_name,
+                        ].filter(Boolean).join(' ')}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {[
+                          address.city,
+                          address.state,
+                          address.postal_code
+                        ].filter(Boolean).join(', ')}
+                      </div>
+                    </div>
+                    <CopyButton text={address.formatted_address} />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          <Link href={`/customers/${customer.id}/edit`}>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-8 w-8 rounded-full"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <CustomerInfo customer={customer} />
-        <JobProgress 
-          lead={latestLead}
-          quote={latestQuote}
-          agreement={latestAgreement}
-          installation={latestInstallation}
-          customer={customer}
-        />
+      <div className="flex gap-6">
+        <div className="flex-1">
+          <Notes customerId={customer.id} />
+        </div>
+        <div className="w-[400px]">
+          <JobProgress 
+            lead={latestLead}
+            quote={latestQuote}
+            agreement={latestAgreement}
+            installation={latestInstallation}
+            customer={customer}
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="leads" className="mt-6">

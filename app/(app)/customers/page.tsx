@@ -1,21 +1,21 @@
-import { createClient } from "@/utils/supabase/server";
-import { CustomersTable } from "@/components/tables/customers-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import Link from "next/link";
+import { createClient } from "@/utils/supabase/server"
+import { CustomersTable } from "@/components/tables/customers-table"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import Link from "next/link"
 
 export default async function CustomersPage() {
-  const supabase = await createClient();
+  const supabase = await createClient()
   const { data: customers, error } = await supabase
     .from("customers")
     .select(`
       *,
       addresses(*)
     `)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching customers:', error);
+    console.error('Error fetching customers:', error)
     // TODO: Handle error state
   }
 
@@ -33,5 +33,5 @@ export default async function CustomersPage() {
       
       <CustomersTable data={customers || []} />
     </div>
-  );
+  )
 } 
