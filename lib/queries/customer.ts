@@ -1,6 +1,48 @@
 import { createClient } from "@/utils/supabase/server"
 import { type Tables } from "@/types/database.types"
 
+// Define complete types that match component expectations
+type Quote = Pick<Tables<"quotes">, 
+  | "id"
+  | "address_id"
+  | "customer_id"
+  | "lead_id"
+  | "monthly_rental_rate"
+  | "setup_fee"
+  | "rental_type"
+  | "quote_status"
+  | "created_at"
+  | "updated_at"
+  | "flat_rate"
+  | "install_date"
+  | "removal_date"
+  | "valid_until"
+  | "notes"
+>
+
+type Agreement = Pick<Tables<"agreements">,
+  | "id"
+  | "address_id"
+  | "customer_id"
+  | "quote_id"
+  | "agreement_status"
+  | "created_at"
+  | "signed_date"
+  | "updated_at"
+  | "notes"
+>
+
+type Installation = Pick<Tables<"installations">,
+  | "id"
+  | "agreement_id"
+  | "installation_date"
+  | "installation_photos"
+  | "installed_by"
+  | "sign_off"
+  | "created_at"
+  | "updated_at"
+>
+
 export type CustomerWithDetails = {
   id: string
   first_name: string
@@ -11,30 +53,10 @@ export type CustomerWithDetails = {
   updated_at: string | null
   addresses: Tables<"addresses">[]
   leads: Tables<"leads">[]
-  quotes: (Tables<"quotes"> & {
-    lead: {
-      customer: Pick<Tables<"customers">, 
-        | "id"
-        | "first_name" 
-        | "last_name"
-      > | null
-    } | null
-  })[]
-  agreements: (Tables<"agreements"> & {
-    quote: {
-      monthly_rental_rate: number
-      setup_fee: number
-      rental_type: string
-      lead: {
-        customer: Pick<Tables<"customers">, 
-          | "id"
-          | "first_name" 
-          | "last_name" 
-          | "email"
-        > | null
-      } | null
-    } | null
-    installation: Tables<"installations">[]
+  quotes: Quote[]
+  agreements: (Agreement & {
+    quote: Quote | null
+    installation: Installation[]
     invoices: Tables<"invoices">[]
     subscriptions: (Tables<"subscriptions"> & {
       agreement: {
@@ -42,12 +64,12 @@ export type CustomerWithDetails = {
           monthly_rental_rate: number
           rental_type: string
           lead: {
-            customer: Pick<Tables<"customers">, 
-              | "id"
-              | "first_name" 
-              | "last_name" 
-              | "email"
-            > | null
+            customer: {
+              id: string
+              first_name: string
+              last_name: string
+              email: string | null
+            } | null
           } | null
         } | null
       } | null
@@ -65,31 +87,59 @@ export async function getCustomerWithDetails(customerId: string) {
       addresses(*),
       leads(*),
       quotes(
-        *,
-        lead:leads(
-          customer:customers(
-            id,
-            first_name,
-            last_name
-          )
-        )
+        id,
+        address_id,
+        customer_id,
+        lead_id,
+        monthly_rental_rate,
+        setup_fee,
+        rental_type,
+        quote_status,
+        created_at,
+        updated_at,
+        flat_rate,
+        install_date,
+        removal_date,
+        valid_until,
+        notes
       ),
       agreements(
-        *,
+        id,
+        address_id,
+        customer_id,
+        quote_id,
+        agreement_status,
+        created_at,
+        signed_date,
+        updated_at,
+        notes,
         quote:quotes(
+          id,
+          address_id,
+          customer_id,
+          lead_id,
           monthly_rental_rate,
           setup_fee,
           rental_type,
-          lead:leads(
-            customer:customers(
-              id,
-              first_name,
-              last_name,
-              email
-            )
-          )
+          quote_status,
+          created_at,
+          updated_at,
+          flat_rate,
+          install_date,
+          removal_date,
+          valid_until,
+          notes
         ),
-        installation:installations(*),
+        installation:installations(
+          id,
+          agreement_id,
+          installation_date,
+          installation_photos,
+          installed_by,
+          sign_off,
+          created_at,
+          updated_at
+        ),
         invoices(*),
         subscriptions(
           *,
@@ -121,7 +171,7 @@ export async function getCustomerWithDetails(customerId: string) {
     return null
   }
 
-  return customer as unknown as CustomerWithDetails
+  return customer as CustomerWithDetails
 }
 
 export function extractRelatedData(customer: CustomerWithDetails) {
