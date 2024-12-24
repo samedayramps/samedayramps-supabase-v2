@@ -9,33 +9,17 @@ import { SubscriptionsTable } from "@/components/tables/subscriptions-table"
 import { notFound } from "next/navigation"
 import { getCustomerWithDetails, extractRelatedData } from "@/lib/queries/customer"
 import { Button } from "@/components/ui/button"
-import { Mail, Phone, MapPin, Edit, Copy } from "lucide-react"
+import { Mail, Phone, MapPin, Edit } from "lucide-react"
 import Link from "next/link"
 import { Breadcrumbs } from "@/components/common/breadcrumbs"
 import { Notes } from "@/components/customer/notes"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CopyButton } from "@/components/common/copy-button"
 
 interface CustomerPageProps {
   params: {
     id: string
   }
-}
-
-function CopyButton({ text }: { text: string }) {
-  "use client"
-  
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-6 w-6"
-      onClick={() => {
-        navigator.clipboard.writeText(text)
-      }}
-    >
-      <Copy className="h-3 w-3" />
-    </Button>
-  )
 }
 
 export default async function CustomerPage({ params }: CustomerPageProps) {
@@ -87,7 +71,7 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
                     >
                       {customer.email}
                     </a>
-                    <CopyButton text={customer.email} />
+                    <CopyButton value={customer.email} />
                   </div>
                 </PopoverContent>
               </Popover>
@@ -112,7 +96,7 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
                     >
                       {customer.phone}
                     </a>
-                    <CopyButton text={customer.phone} />
+                    <CopyButton value={customer.phone} />
                   </div>
                 </PopoverContent>
               </Popover>
@@ -146,7 +130,7 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
                         ].filter(Boolean).join(', ')}
                       </div>
                     </div>
-                    <CopyButton text={address.formatted_address} />
+                    <CopyButton value={address.formatted_address} />
                   </div>
                 </PopoverContent>
               </Popover>

@@ -6,7 +6,7 @@ import { DataTableColumnHeader } from "@/components/common/data-table-column-hea
 import { DataTableRowActions } from "@/components/common/data-table-row-actions"
 import { ColumnDef } from "@tanstack/react-table"
 import { deleteCustomer } from "@/app/actions/customers"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export type Customer = Tables<"customers"> & {
   addresses?: Tables<"addresses">[] | null
@@ -16,19 +16,9 @@ interface CustomersTableProps {
   data: Customer[]
 }
 
-// Client-side wrapper for delete action
-function DeleteAction({ customerId }: { customerId: string }) {
-  return (
-    <DataTableRowActions
-      editHref={`/customers/${customerId}/edit`}
-      deleteAction={async () => {
-        await deleteCustomer(customerId)
-      }}
-    />
-  )
-}
-
 export function CustomersTable({ data }: CustomersTableProps) {
+  const router = useRouter()
+
   const columns: ColumnDef<Customer>[] = [
     {
       id: "name",
@@ -39,12 +29,9 @@ export function CustomersTable({ data }: CustomersTableProps) {
         const firstName = row.original.first_name
         const lastName = row.original.last_name
         return (
-          <Link 
-            href={`/customers/${row.original.id}`}
-            className="block capitalize hover:underline"
-          >
+          <div className="capitalize">
             {[firstName, lastName].filter(Boolean).join(" ")}
-          </Link>
+          </div>
         )
       },
       accessorFn: (row) => `${row.first_name} ${row.last_name}`,
@@ -61,7 +48,6 @@ export function CustomersTable({ data }: CustomersTableProps) {
           <a 
             href={`mailto:${email}`} 
             className="hover:underline text-primary"
-            onClick={(e) => e.stopPropagation()}
           >
             {email}
           </a>
@@ -80,7 +66,6 @@ export function CustomersTable({ data }: CustomersTableProps) {
           <a 
             href={`tel:${phone}`} 
             className="hover:underline text-primary"
-            onClick={(e) => e.stopPropagation()}
           >
             {phone}
           </a>
@@ -124,7 +109,14 @@ export function CustomersTable({ data }: CustomersTableProps) {
       id: "actions",
       cell: ({ row }) => {
         const customer = row.original
-        return <DeleteAction customerId={customer.id} />
+        return (
+          <DataTableRowActions
+            editHref={`/customers/${customer.id}/edit`}
+            deleteAction={async () => {
+              await deleteCustomer(customer.id)
+            }}
+          />
+        )
       },
     },
   ]
@@ -135,6 +127,7 @@ export function CustomersTable({ data }: CustomersTableProps) {
       data={data} 
       filterColumn="name"
       filterPlaceholder="Filter by name..."
+      onRowClick={(row) => router.push(`/customers/${row.id}`)}
     />
   )
 } 
