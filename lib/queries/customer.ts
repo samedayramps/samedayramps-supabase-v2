@@ -43,6 +43,24 @@ type Installation = Pick<Tables<"installations">,
   | "updated_at"
 >
 
+// Match the type expected by SubscriptionsTable
+type Subscription = Tables<"subscriptions"> & {
+  agreement: {
+    quote: {
+      monthly_rental_rate: number
+      rental_type: string
+      lead: {
+        customer: {
+          id: string
+          first_name: string
+          last_name: string
+          email: string | null
+        } | null
+      } | null
+    } | null
+  } | null
+}
+
 export type CustomerWithDetails = {
   id: string
   first_name: string
@@ -58,22 +76,7 @@ export type CustomerWithDetails = {
     quote: Quote | null
     installation: Installation[]
     invoices: Tables<"invoices">[]
-    subscriptions: (Tables<"subscriptions"> & {
-      agreement: {
-        quote: {
-          monthly_rental_rate: number
-          rental_type: string
-          lead: {
-            customer: {
-              id: string
-              first_name: string
-              last_name: string
-              email: string | null
-            } | null
-          } | null
-        } | null
-      } | null
-    })[]
+    subscriptions: Subscription[]
   })[]
 }
 
