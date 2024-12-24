@@ -43,19 +43,24 @@ type Installation = Pick<Tables<"installations">,
   | "updated_at"
 >
 
+type CustomerBasicInfo = {
+  id: string
+  first_name: string
+  last_name: string
+  email: string | null
+}
+
+type QuoteBasicInfo = {
+  monthly_rental_rate: number
+  rental_type: string
+}
+
 // Match the type expected by SubscriptionsTable
 type Subscription = Tables<"subscriptions"> & {
   agreement: {
-    quote: {
-      monthly_rental_rate: number
-      rental_type: string
+    quote: QuoteBasicInfo & {
       lead: {
-        customer: {
-          id: string
-          first_name: string
-          last_name: string
-          email: string | null
-        } | null
+        customer: CustomerBasicInfo | null
       } | null
     } | null
   } | null
