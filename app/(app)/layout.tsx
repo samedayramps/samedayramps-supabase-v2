@@ -10,15 +10,19 @@ export default function AppLayout({
 }) {
   return (
     <div className="relative flex min-h-screen flex-col">
-      <Header>
-        <MobileNav />
-      </Header>
+      <div className="sticky top-0 z-50">
+        <Header>
+          <MobileNav />
+        </Header>
+      </div>
       <div className="flex flex-1">
-        <Sidebar className="w-64 flex-none">
-          <Nav />
+        <Sidebar className="hidden md:flex w-64 flex-shrink-0 border-r">
+          <Nav className="flex-1 px-4 py-6" />
         </Sidebar>
-        <main className="flex-1 overflow-y-auto bg-muted/10 p-6 lg:p-8">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-muted/10 p-4 md:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
         </main>
       </div>
     </div>
