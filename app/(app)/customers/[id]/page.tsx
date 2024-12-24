@@ -149,20 +149,15 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
         </div>
       </div>
 
-      <div className="flex gap-6">
-        <div className="flex-1">
-          <Notes customerId={customer.id} />
-        </div>
-        <div className="w-[400px]">
-          <JobProgress 
-            lead={latestLead}
-            quote={latestQuote}
-            agreement={latestAgreement}
-            installation={latestInstallation}
-            customer={customer}
-          />
-        </div>
-      </div>
+      <JobProgress 
+        lead={latestLead}
+        quote={latestQuote}
+        agreement={latestAgreement}
+        installation={latestInstallation}
+        customer={customer}
+      />
+
+      <Notes customerId={customer.id} />
 
       <Tabs defaultValue="leads" className="mt-6">
         <TabsList className="w-full justify-start">

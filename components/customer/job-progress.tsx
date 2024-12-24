@@ -72,146 +72,119 @@ export function JobProgress(props: JobProgressProps) {
 
       {/* Progress Stages */}
       <div className="flex flex-col gap-2">
-        {progress.stages.map((stage, index) => {
-          const isExpanded = expandedStage === stage.key
-          const isCurrentStage = index === progress.currentStage
-          
-          return (
-            <Collapsible
-              key={stage.key}
-              open={isExpanded}
-              onOpenChange={() => toggleStage(stage.key)}
-            >
-              <div 
-                className={cn(
-                  "rounded-lg border transition-all ease-in-out duration-200",
-                  stage.isComplete && "bg-primary/5 border-primary/20",
-                  stage.isInProgress && "bg-warning/5 border-warning/20",
-                  !stage.isComplete && !stage.isInProgress && "bg-muted/5 border-muted",
-                  "hover:bg-accent/5 cursor-pointer"
-                )}
-              >
-                <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Status Indicator */}
-                    <div 
-                      className={cn(
-                        "h-3 w-3 rounded-full transition-all ease-in-out duration-200",
-                        stage.isComplete && "bg-primary",
-                        stage.isInProgress && "bg-warning",
-                        !stage.isComplete && !stage.isInProgress && "bg-muted-foreground/25"
-                      )}
-                    />
-                    
-                    <div className="flex flex-col gap-1">
-                      <div className="font-medium">{stage.label}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {stage.description}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {stage.date && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <CalendarDays className="h-3 w-3" />
-                        {new Date(stage.date).toLocaleDateString()}
-                      </div>
-                    )}
-                    <div 
-                      className={cn(
-                        "transform transition-transform ease-in-out duration-200",
-                        isExpanded && "rotate-180"
-                      )}
-                    >
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                </CollapsibleTrigger>
-
-                {/* Expandable Details */}
-                <CollapsibleContent 
-                  className={cn(
-                    "overflow-hidden transition-all ease-in-out duration-200",
-                    "data-[state=open]:animate-[accordion-down_200ms_ease-in-out]",
-                    "data-[state=closed]:animate-[accordion-up_200ms_ease-in-out]"
-                  )}
-                >
-                  <div className="border-t p-4 text-sm space-y-2">
-                    {stage.key === 'lead' && stage.details && (
-                      <>
-                        {stage.details.mobilityType && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Mobility Type:</span>
-                            <span>{stage.details.mobilityType}</span>
-                          </div>
-                        )}
-                        {stage.details.timeline && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Timeline:</span>
-                            <span>{stage.details.timeline}</span>
-                          </div>
-                        )}
-                        <div className="mt-4 flex justify-end">
-                          <Link href={`/customers/${props.customer.id}/call`}>
-                            <Button size="sm" variant="outline">
-                              <Phone className="h-4 w-4 mr-2" />
-                              Call Customer
-                            </Button>
-                          </Link>
+        {Object.entries(progress.stages).map(([key, stage]) => (
+          <Collapsible
+            key={key}
+            open={expandedStage === key}
+            onOpenChange={() => toggleStage(key)}
+          >
+            <div className={cn(
+              "rounded-lg border",
+              expandedStage === key ? "bg-muted/50" : "bg-background",
+              stage.isComplete ? "border-muted" : "border-border"
+            )}>
+              <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
+                <div className="flex items-center gap-4">
+                  <Badge 
+                    variant={stage.variant}
+                    className="w-24 justify-center"
+                  >
+                    {stage.status}
+                  </Badge>
+                  <span className="font-medium">{stage.label}</span>
+                </div>
+                <ChevronDown className={cn(
+                  "h-4 w-4 transition-transform",
+                  expandedStage === key ? "rotate-180" : ""
+                )} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 space-y-2">
+                  {stage.key === 'lead' && stage.details && (
+                    <>
+                      {stage.details.source && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Source:</span>
+                          <span>{stage.details.source}</span>
                         </div>
-                      </>
-                    )}
-                    {stage.key === 'quote' && stage.details && (
-                      <>
-                        {'monthlyRate' in stage.details && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Monthly Rate:</span>
-                            <span>{formatCurrency(stage.details.monthlyRate)}</span>
-                          </div>
-                        )}
-                        {'setupFee' in stage.details && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Setup Fee:</span>
-                            <span>{formatCurrency(stage.details.setupFee)}</span>
-                          </div>
-                        )}
-                        {'validUntil' in stage.details && stage.details.validUntil && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Valid Until:</span>
-                            <span>{new Date(stage.details.validUntil).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {stage.key === 'installation' && stage.details?.installedBy && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Installed By:</span>
-                        <span>{stage.details.installedBy}</span>
+                      )}
+                      {stage.details.mobilityType && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Mobility Type:</span>
+                          <span>{stage.details.mobilityType}</span>
+                        </div>
+                      )}
+                      {stage.details.timeline && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Timeline:</span>
+                          <span>{stage.details.timeline}</span>
+                        </div>
+                      )}
+                      {stage.details.notes && (
+                        <div className="mt-4">
+                          <div className="text-muted-foreground mb-1">Notes:</div>
+                          <div className="text-sm whitespace-pre-wrap">{stage.details.notes}</div>
+                        </div>
+                      )}
+                      <div className="mt-4 flex justify-end">
+                        <Link href={`/customers/${props.customer.id}/call`}>
+                          <Button size="sm" variant="outline">
+                            <Phone className="h-4 w-4 mr-2" />
+                            Call Customer
+                          </Button>
+                        </Link>
                       </div>
-                    )}
-                    {stage.key === 'invoice' && stage.details && (
-                      <>
-                        {'amount' in stage.details && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Amount:</span>
-                            <span>{formatCurrency(stage.details.amount)}</span>
-                          </div>
-                        )}
-                        {'paymentDate' in stage.details && stage.details.paymentDate && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Paid On:</span>
-                            <span>{new Date(stage.details.paymentDate).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          )
-        })}
+                    </>
+                  )}
+                  {stage.key === 'quote' && stage.details && (
+                    <>
+                      {'monthlyRate' in stage.details && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Monthly Rate:</span>
+                          <span>{formatCurrency(stage.details.monthlyRate)}</span>
+                        </div>
+                      )}
+                      {'setupFee' in stage.details && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Setup Fee:</span>
+                          <span>{formatCurrency(stage.details.setupFee)}</span>
+                        </div>
+                      )}
+                      {'validUntil' in stage.details && stage.details.validUntil && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Valid Until:</span>
+                          <span>{new Date(stage.details.validUntil).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {stage.key === 'installation' && stage.details?.installedBy && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Installed By:</span>
+                      <span>{stage.details.installedBy}</span>
+                    </div>
+                  )}
+                  {stage.key === 'invoice' && stage.details && (
+                    <>
+                      {'amount' in stage.details && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Amount:</span>
+                          <span>{formatCurrency(stage.details.amount)}</span>
+                        </div>
+                      )}
+                      {'paymentDate' in stage.details && stage.details.paymentDate && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Paid On:</span>
+                          <span>{new Date(stage.details.paymentDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        ))}
       </div>
     </div>
   )
