@@ -507,6 +507,42 @@ export type Database = {
           },
         ]
       }
+      settings: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          key: string
+          name: string
+          type: Database["public"]["Enums"]["setting_type"]
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          type: Database["public"]["Enums"]["setting_type"]
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          type?: Database["public"]["Enums"]["setting_type"]
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           agreement_id: string
@@ -580,7 +616,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      setting_type: "number" | "text" | "boolean"
     }
     CompositeTypes: {
       [_ in never]: never

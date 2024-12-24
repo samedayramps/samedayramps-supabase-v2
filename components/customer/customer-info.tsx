@@ -2,10 +2,14 @@
 
 import { type Tables } from "@/types/database.types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Copy, Mail, Phone, MapPin, Edit } from "lucide-react"
 import { useToast } from "@/components/hooks/use-toast"
 import Link from "next/link"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 type CustomerWithDetails = Tables<"customers"> & {
   addresses?: Tables<"addresses">[] | null
@@ -28,90 +32,130 @@ export function CustomerInfo({ customer }: CustomerInfoProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-bold">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">
           {customer.first_name} {customer.last_name}
-        </CardTitle>
-        <Link href={`/customers/${customer.id}/edit`}>
-          <Button variant="ghost" size="icon">
-            <Edit className="h-4 w-4" />
-          </Button>
-        </Link>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {customer.email && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <a 
-                href={`mailto:${customer.email}`}
-                className="text-sm hover:underline"
-              >
-                {customer.email}
-              </a>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => copyToClipboard(customer.email!, "Email")}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        </h1>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
+            {customer.email && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <Mail className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={`mailto:${customer.email}`}
+                      className="text-sm hover:text-foreground transition-colors"
+                    >
+                      {customer.email}
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => copyToClipboard(customer.email!, "Email")}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
 
-        {customer.phone && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <a 
-                href={`tel:${customer.phone}`}
-                className="text-sm hover:underline"
-              >
-                {customer.phone}
-              </a>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => copyToClipboard(customer.phone!, "Phone")}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+            {customer.phone && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={`tel:${customer.phone}`}
+                      className="text-sm hover:text-foreground transition-colors"
+                    >
+                      {customer.phone}
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => copyToClipboard(customer.phone!, "Phone")}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
 
-        {address && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <div className="text-sm">
-                <div>
-                  {[
-                    address.street_number,
-                    address.street_name,
-                  ].filter(Boolean).join(' ')}
-                </div>
-                <div className="text-muted-foreground">
-                  {[
-                    address.city,
-                    address.state,
-                    address.postal_code
-                  ].filter(Boolean).join(', ')}
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => copyToClipboard(address.formatted_address, "Address")}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+            {address && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm">
+                      <div>
+                        {[
+                          address.street_number,
+                          address.street_name,
+                        ].filter(Boolean).join(' ')}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {[
+                          address.city,
+                          address.state,
+                          address.postal_code
+                        ].filter(Boolean).join(', ')}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => copyToClipboard(address.formatted_address, "Address")}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <Link href={`/customers/${customer.id}/edit`}>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-8 w-8 rounded-full"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
   )
 } 

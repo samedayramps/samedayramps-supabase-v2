@@ -9,6 +9,9 @@ import { InvoicesTable } from "@/components/tables/invoices-table"
 import { SubscriptionsTable } from "@/components/tables/subscriptions-table"
 import { notFound } from "next/navigation"
 import { getCustomerWithDetails, extractRelatedData } from "@/lib/queries/customer"
+import { Button } from "@/components/ui/button"
+import { Phone } from "lucide-react"
+import Link from "next/link"
 
 export default async function CustomerPage({
   params,
@@ -33,6 +36,16 @@ export default async function CustomerPage({
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Customer Details</h1>
+        <Link href={`/customers/${customer.id}/call`}>
+          <Button>
+            <Phone className="h-4 w-4 mr-2" />
+            Call Customer
+          </Button>
+        </Link>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
         <CustomerInfo customer={customer} />
         <JobProgress 
@@ -40,10 +53,11 @@ export default async function CustomerPage({
           quote={latestQuote}
           agreement={latestAgreement}
           installation={latestInstallation}
+          customer={customer}
         />
       </div>
 
-      <Tabs defaultValue="leads" className="w-full">
+      <Tabs defaultValue="leads" className="mt-6">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="leads">Leads</TabsTrigger>
           <TabsTrigger value="quotes">Quotes</TabsTrigger>
@@ -71,13 +85,6 @@ export default async function CustomerPage({
           <SubscriptionsTable data={subscriptions} />
         </TabsContent>
       </Tabs>
-
-      <div className="p-6 bg-muted rounded-lg">
-        <h2 className="text-lg font-semibold mb-4">Debug Info</h2>
-        <pre className="whitespace-pre-wrap text-sm">
-          {JSON.stringify(customer, null, 2)}
-        </pre>
-      </div>
     </div>
   )
 } 

@@ -1,9 +1,7 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { FormControl } from "@/components/ui/form"
 import { useEffect, useRef, useState } from "react"
-import { useDebouncedCallback } from 'use-debounce'
 import { useGoogleMapsLoaded } from "./google-maps-script"
 
 interface AddressAutocompleteProps {
@@ -26,7 +24,6 @@ export function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
   const isScriptLoaded = useGoogleMapsLoaded()
-  const [scriptError, setScriptError] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState(value)
 
   // Update local state when prop value changes
@@ -70,58 +67,38 @@ export function AddressAutocomplete({
         if (inputRef.current) {
           inputRef.current.removeEventListener('keydown', handleKeyDown)
         }
+        // Clean up autocomplete
+        if (autocompleteRef.current) {
+          google.maps.event.clearInstanceListeners(autocompleteRef.current)
+        }
       }
     } catch (error) {
       console.error('Error initializing Google Places Autocomplete:', error)
-      setScriptError('Failed to initialize address autocomplete')
     }
   }, [isScriptLoaded, onChange])
-
-  const debouncedOnChange = useDebouncedCallback((value: string) => {
-    onChange(value)
-  }, 300)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     setInputValue(newValue)
-    debouncedOnChange(newValue)
+    // Always call onChange with the new value
+    onChange(newValue)
   }
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Only call onBlur if we're not clicking on the suggestions dropdown
-    const isClickingAutocomplete = document.querySelector('.pac-container')?.contains(e.relatedTarget as Node)
-    if (!isClickingAutocomplete && onBlur) {
-      onBlur()
-    }
-  }
-
-  if (scriptError) {
-    return (
-      <Input
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        onBlur={handleBlur}
-        disabled={disabled}
-        placeholder={scriptError}
-        className={className}
-      />
-    )
+  const handleBlur = () => {
+    onBlur?.()
   }
 
   return (
-    <FormControl>
-      <Input
-        ref={inputRef}
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        onBlur={handleBlur}
-        disabled={disabled || !isScriptLoaded}
-        placeholder={!isScriptLoaded ? "Loading..." : placeholder}
-        className={className}
-        autoComplete="off"
-      />
-    </FormControl>
+    <Input
+      ref={inputRef}
+      type="text"
+      value={inputValue}
+      onChange={handleInputChange}
+      onBlur={handleBlur}
+      disabled={disabled || !isScriptLoaded}
+      placeholder={!isScriptLoaded ? "Loading..." : placeholder}
+      className={className}
+      autoComplete="off"
+    />
   )
 } 

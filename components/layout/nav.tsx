@@ -11,6 +11,7 @@ import {
   Wrench,
   Receipt,
   CreditCard,
+  Settings,
 } from "lucide-react"
 
 export const routes = [
@@ -61,6 +62,12 @@ export const routes = [
     icon: CreditCard,
     href: "/subscriptions",
     color: "text-purple-700",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    href: "/settings",
+    color: "text-gray-500",
   },
 ] as const
 
