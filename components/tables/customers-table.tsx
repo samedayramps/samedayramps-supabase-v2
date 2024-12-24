@@ -6,7 +6,7 @@ import { DataTableColumnHeader } from "@/components/common/data-table-column-hea
 import { DataTableRowActions } from "@/components/common/data-table-row-actions"
 import { ColumnDef } from "@tanstack/react-table"
 import { deleteCustomer } from "@/app/actions/customers"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export type Customer = Tables<"customers"> & {
   addresses?: Tables<"addresses">[] | null
@@ -17,8 +17,6 @@ interface CustomersTableProps {
 }
 
 export function CustomersTable({ data }: CustomersTableProps) {
-  const router = useRouter()
-
   const columns: ColumnDef<Customer>[] = [
     {
       id: "name",
@@ -29,9 +27,12 @@ export function CustomersTable({ data }: CustomersTableProps) {
         const firstName = row.original.first_name
         const lastName = row.original.last_name
         return (
-          <div className="capitalize">
+          <Link 
+            href={`/customers/${row.original.id}`}
+            className="block capitalize hover:underline"
+          >
             {[firstName, lastName].filter(Boolean).join(" ")}
-          </div>
+          </Link>
         )
       },
       accessorFn: (row) => `${row.first_name} ${row.last_name}`,
@@ -48,6 +49,7 @@ export function CustomersTable({ data }: CustomersTableProps) {
           <a 
             href={`mailto:${email}`} 
             className="hover:underline text-primary"
+            onClick={(e) => e.stopPropagation()}
           >
             {email}
           </a>
@@ -66,6 +68,7 @@ export function CustomersTable({ data }: CustomersTableProps) {
           <a 
             href={`tel:${phone}`} 
             className="hover:underline text-primary"
+            onClick={(e) => e.stopPropagation()}
           >
             {phone}
           </a>
@@ -127,7 +130,6 @@ export function CustomersTable({ data }: CustomersTableProps) {
       data={data} 
       filterColumn="name"
       filterPlaceholder="Filter by name..."
-      onRowClick={(row) => router.push(`/customers/${row.id}`)}
     />
   )
 } 
