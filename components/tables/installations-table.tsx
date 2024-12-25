@@ -1,21 +1,23 @@
 "use client"
 
-import { Tables } from '@/types/database.types'
-import { DataTable } from '@/components/common/data-table'
-import { DataTableColumnHeader } from '@/components/common/data-table-column-header'
-import { DataTableRowActions } from '@/components/common/data-table-row-actions'
-import { deleteInstallation } from '@/app/actions/installations'
-import { formatDate } from '@/lib/utils'
-import { ColumnDef } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
+import { type Tables } from "@/types/database.types"
+import { DataTable } from "@/components/common/data-table"
+import { DataTableColumnHeader } from "@/components/common/data-table-column-header"
+import { DataTableRowActions } from "@/components/common/data-table-row-actions"
+import { type ColumnDef } from "@tanstack/react-table"
+import { deleteInstallation } from "@/app/actions/installations"
+import { useRouter } from "next/navigation"
+import { formatDate } from "@/lib/utils"
 
-type Installation = Tables<'installations'> & {
+export type Installation = Tables<"installations"> & {
   agreement?: {
     quote?: {
       lead?: {
         customer?: Pick<Tables<"customers">, 
           | "first_name" 
-          | "last_name"
+          | "last_name" 
+          | "email" 
+          | "phone"
           | "id"
         > | null
       } | null
@@ -86,15 +88,15 @@ export function InstallationsTable({ data }: InstallationsTableProps) {
   ]
 
   return (
-    <DataTable<Installation>
-      columns={columns}
-      data={data}
-      filterColumn="customerName"
+    <DataTable 
+      columns={columns} 
+      data={data} 
+      filterColumn="customer_name"
       filterPlaceholder="Filter by customer name..."
-      onRowClick={(row) => {
-        if (row.agreement?.quote?.lead?.customer?.id) {
-          router.push(`/customers/${row.agreement.quote.lead.customer.id}`)
-        }
+      onRowClick={(row) => router.push(`/installations/${row.id}`)}
+      newItemButton={{
+        href: "/installations/new",
+        label: "New Installation"
       }}
     />
   )

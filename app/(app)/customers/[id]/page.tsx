@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { Edit } from "lucide-react"
 import Link from "next/link"
 import { Breadcrumbs } from "@/components/common/breadcrumbs"
-import { Notes } from "@/components/customer/notes-drawer"
 import { CustomerHeader } from "@/components/customer/customer-header"
 
 interface CustomerPageProps {
@@ -71,8 +70,6 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
         installation={latestInstallation}
         customer={customer}
       />
-
-      <Notes customerId={customer.id} />
 
       <div className="overflow-hidden">
         <Tabs defaultValue="leads">

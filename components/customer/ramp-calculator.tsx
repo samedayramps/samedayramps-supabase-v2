@@ -3,14 +3,14 @@
 import { type Tables } from "@/types/database.types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getSettings } from "@/lib/queries/settings"
 import { calculateDistance } from "@/lib/services/distance"
 import { calculatePricing } from "@/lib/services/pricing"
 import { useState } from "react"
 import { useToast } from "@/components/hooks/use-toast"
-import { Calculator, Ruler, Blocks } from "lucide-react"
+import { Calculator } from "lucide-react"
+import { ComponentSelector } from "./component-selector"
 
 type CalculatedPricing = {
   monthlyRate: number
@@ -18,13 +18,18 @@ type CalculatedPricing = {
   pricePerFoot: number
 }
 
+type Component = Tables<"components">
+
 interface RampCalculatorProps {
   customerAddress: string
   initialValues?: {
-    rampLength?: number
-    numComponents?: number
+    components?: { component: Component; quantity: number }[]
   }
-  onCalculate?: (pricing: CalculatedPricing & { distance: number }) => void
+  onCalculate?: (pricing: CalculatedPricing & { 
+    distance: number;
+    components: { component: Component; quantity: number }[];
+    totalLength: number;
+  }) => void
   className?: string
 }
 
@@ -35,11 +40,25 @@ export function RampCalculator({
   className 
 }: RampCalculatorProps) {
   const { toast } = useToast()
-  const [rampLength, setRampLength] = useState(initialValues?.rampLength?.toString() || "")
-  const [numComponents, setNumComponents] = useState(initialValues?.numComponents?.toString() || "")
+  const [selectedComponents, setSelectedComponents] = useState<{ component: Component; quantity: number }[]>(
+    initialValues?.components || []
+  )
   const [distance, setDistance] = useState<number | null>(null)
   const [pricing, setPricing] = useState<CalculatedPricing | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const calculateTotalLength = (components: { component: Component; quantity: number }[]) => {
+    return components.reduce((total, { component, quantity }) => {
+      if (component.type === 'RAMP') {
+        return total + (component.length * quantity)
+      }
+      return total
+    }, 0)
+  }
+
+  const handleComponentsChange = (components: { component: Component; quantity: number }[]) => {
+    setSelectedComponents(components)
+  }
 
   const handleCalculate = async () => {
     if (!customerAddress) {
@@ -51,11 +70,11 @@ export function RampCalculator({
       return
     }
 
-    if (!rampLength || !numComponents) {
+    if (selectedComponents.length === 0) {
       toast({
         variant: "destructive",
-        title: "Missing Information",
-        description: "Please enter both ramp length and number of components"
+        title: "Missing Components",
+        description: "Please select at least one component"
       })
       return
     }
@@ -66,15 +85,18 @@ export function RampCalculator({
       const calculatedDistance = await calculateDistance(customerAddress)
       setDistance(calculatedDistance)
 
+      const totalLength = calculateTotalLength(selectedComponents)
+      const numComponents = selectedComponents.reduce((total, { quantity }) => total + quantity, 0)
+
       const calculatedPricing = calculatePricing({
-        rampLength: Number(rampLength),
-        numComponents: Number(numComponents),
+        rampLength: totalLength,
+        numComponents,
         distance: calculatedDistance,
         settings
       })
 
       // Calculate price per foot
-      const pricePerFoot = calculatedPricing.monthlyRate / Number(rampLength)
+      const pricePerFoot = calculatedPricing.monthlyRate / totalLength
 
       const pricingWithPerFoot = {
         ...calculatedPricing,
@@ -84,7 +106,9 @@ export function RampCalculator({
       setPricing(pricingWithPerFoot)
       onCalculate?.({
         ...pricingWithPerFoot,
-        distance: calculatedDistance
+        distance: calculatedDistance,
+        components: selectedComponents,
+        totalLength
       })
     } catch (error) {
       toast({
@@ -97,20 +121,6 @@ export function RampCalculator({
     }
   }
 
-  const handleRampLengthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setRampLength(value)
-    }
-  }
-
-  const handleComponentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value === "" || /^\d+$/.test(value)) {
-      setNumComponents(value)
-    }
-  }
-
   return (
     <Card className={`overflow-hidden ${className}`}>
       {/* Header */}
@@ -120,45 +130,17 @@ export function RampCalculator({
       </div>
 
       <div className="p-4 space-y-6">
-        {/* Input Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="rampLength" className="flex items-center gap-2">
-              <Ruler className="h-4 w-4" />
-              Ramp Length (feet)
-            </Label>
-            <Input
-              id="rampLength"
-              type="text"
-              inputMode="decimal"
-              value={rampLength}
-              onChange={handleRampLengthChange}
-              placeholder="Enter ramp length"
-              className="bg-muted/50"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="numComponents" className="flex items-center gap-2">
-              <Blocks className="h-4 w-4" />
-              Number of Components
-            </Label>
-            <Input
-              id="numComponents"
-              type="text"
-              inputMode="numeric"
-              value={numComponents}
-              onChange={handleComponentsChange}
-              placeholder="Enter number of components"
-              className="bg-muted/50"
-            />
-          </div>
-        </div>
+        {/* Component Selector */}
+        <ComponentSelector
+          onComponentsChange={handleComponentsChange}
+          className="bg-muted/50"
+        />
 
         {/* Calculate Button */}
         <div className="flex w-full md:justify-end">
           <Button 
             onClick={handleCalculate} 
-            disabled={isLoading || !rampLength || !numComponents}
+            disabled={isLoading || selectedComponents.length === 0}
             size="lg"
             className="w-full md:w-auto min-w-[120px]"
           >

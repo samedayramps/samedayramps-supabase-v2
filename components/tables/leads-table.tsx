@@ -154,6 +154,10 @@ export function LeadsTable({ data }: LeadsTableProps) {
           router.push(`/customers/${row.customer.id}`)
         }
       }}
+      newItemButton={{
+        href: "/leads/new",
+        label: "New Lead"
+      }}
     />
   )
 } 

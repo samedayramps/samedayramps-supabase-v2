@@ -1,8 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { InstallationsTable } from "@/components/tables/installations-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 
 export default async function InstallationsPage() {
   const supabase = await createClient();
@@ -16,7 +13,9 @@ export default async function InstallationsPage() {
             customer:customers(
               id,
               first_name,
-              last_name
+              last_name,
+              email,
+              phone
             )
           )
         )
@@ -31,16 +30,7 @@ export default async function InstallationsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Installations</h1>
-        <Link href="/installations/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Installation
-          </Button>
-        </Link>
-      </div>
-      
+      <h1 className="text-2xl font-bold">Installations</h1>
       <InstallationsTable data={installations || []} />
     </div>
   );

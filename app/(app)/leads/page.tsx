@@ -1,8 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { LeadsTable } from "@/components/tables/leads-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 
 export default async function LeadsPage() {
   const supabase = await createClient();
@@ -10,13 +7,7 @@ export default async function LeadsPage() {
     .from("leads")
     .select(`
       *,
-      customer:customers(
-        id,
-        first_name,
-        last_name,
-        email,
-        phone
-      )
+      customers(*)
     `)
     .order('created_at', { ascending: false });
 
@@ -27,16 +18,7 @@ export default async function LeadsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Leads</h1>
-        <Link href="/leads/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Lead
-          </Button>
-        </Link>
-      </div>
-      
+      <h1 className="text-2xl font-bold">Leads</h1>
       <LeadsTable data={leads || []} />
     </div>
   );

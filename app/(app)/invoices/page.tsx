@@ -1,8 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { InvoicesTable } from "@/components/tables/invoices-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 
 export default async function InvoicesPage() {
   const supabase = await createClient();
@@ -17,7 +14,8 @@ export default async function InvoicesPage() {
               id,
               first_name,
               last_name,
-              email
+              email,
+              phone
             )
           )
         )
@@ -32,16 +30,7 @@ export default async function InvoicesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Invoices</h1>
-        <Link href="/invoices/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Invoice
-          </Button>
-        </Link>
-      </div>
-      
+      <h1 className="text-2xl font-bold">Invoices</h1>
       <InvoicesTable data={invoices || []} />
     </div>
   );

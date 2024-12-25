@@ -45,6 +45,7 @@ import {
   Edit,
   Trash,
   Filter,
+  Plus,
 } from "lucide-react"
 import Link from "next/link"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
@@ -59,6 +60,10 @@ interface DataTableProps<TData> {
   filterPlaceholder?: string
   deleteAction?: (id: string) => Promise<void>
   onRowClick?: (row: TData) => void
+  newItemButton?: {
+    href: string
+    label: string
+  }
 }
 
 export function DataTable<TData>({
@@ -68,6 +73,7 @@ export function DataTable<TData>({
   filterPlaceholder = "Filter...",
   deleteAction,
   onRowClick,
+  newItemButton,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -106,21 +112,22 @@ export function DataTable<TData>({
 
   return (
     <div className="w-full space-y-4">
-      {/* Mobile-optimized filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {filterColumn && (
-            <div className="relative w-full sm:w-[300px]">
-              <Input
-                placeholder={filterPlaceholder}
-                value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""}
-                onChange={(event) =>
-                  table.getColumn(filterColumn)?.setFilterValue(event.target.value)
-                }
-                className="w-full"
-              />
-            </div>
-          )}
+      {/* Updated mobile-optimized filters */}
+      <div className="flex items-center gap-2">
+        {filterColumn && (
+          <div className="flex-1 max-w-sm">
+            <Input
+              placeholder={filterPlaceholder}
+              value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""}
+              onChange={(event) =>
+                table.getColumn(filterColumn)?.setFilterValue(event.target.value)
+              }
+              className="w-full"
+            />
+          </div>
+        )}
+        
+        <div className="flex items-center gap-2 ml-auto">
           <Button
             variant="outline"
             size="sm"
@@ -129,36 +136,49 @@ export function DataTable<TData>({
           >
             <Filter className="h-4 w-4" />
           </Button>
-        </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="hidden sm:flex ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="hidden sm:flex">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {newItemButton && (
+            <Button
+              variant="default"
+              size="icon"
+              asChild
+              className="h-8 w-8"
+            >
+              <Link href={newItemButton.href} aria-label={newItemButton.label}>
+                <Plus className="h-4 w-4" />
+              </Link>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[200px]">
-            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Mobile filters panel */}

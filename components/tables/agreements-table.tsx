@@ -203,6 +203,10 @@ export function AgreementsTable({ data }: AgreementsTableProps) {
           router.push(`/customers/${row.quote.lead.customer.id}`)
         }
       }}
+      newItemButton={{
+        href: "/agreements/new",
+        label: "New Agreement"
+      }}
     />
   )
 } 

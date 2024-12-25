@@ -15,7 +15,7 @@ import { cancelSubscription } from "@/app/actions/subscriptions"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-type Subscription = Tables<"subscriptions"> & {
+export type Subscription = Tables<"subscriptions"> & {
   agreement: {
     quote: {
       monthly_rental_rate: number
@@ -195,6 +195,10 @@ export function SubscriptionsTable({ data }: SubscriptionsTableProps) {
         if (row.agreement?.quote?.lead?.customer?.id) {
           router.push(`/customers/${row.agreement.quote.lead.customer.id}`)
         }
+      }}
+      newItemButton={{
+        href: "/subscriptions/new",
+        label: "New Subscription"
       }}
     />
   )

@@ -608,6 +608,45 @@ export type Database = {
           },
         ]
       }
+      components: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          type: 'RAMP' | 'LANDING'
+          length: number
+          width: number | null
+          price_per_day: number
+          price_per_month: number
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          type: 'RAMP' | 'LANDING'
+          length: number
+          width: number | null
+          price_per_day: number
+          price_per_month: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          type?: 'RAMP' | 'LANDING'
+          length?: number
+          width?: number | null
+          price_per_day?: number
+          price_per_month?: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

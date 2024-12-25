@@ -1,30 +1,23 @@
-import { Sidebar } from "@/components/layout/sidebar"
-import { Header } from "@/components/layout/header"
-import { Nav } from "@/components/layout/nav"
-import { MobileNav } from "@/components/layout/mobile-nav"
+"use client"
 
-export default function AppLayout({
-  children,
-}: {
+import { Sidebar } from "@/components/layout/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
+
+interface AppLayoutProps {
   children: React.ReactNode
-}) {
+}
+
+export default function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <div className="sticky top-0 z-50">
-        <Header>
-          <MobileNav />
-        </Header>
-      </div>
-      <div className="flex flex-1">
-        <Sidebar className="hidden md:flex w-64 flex-shrink-0 border-r">
-          <Nav className="flex-1 px-4 py-6" />
-        </Sidebar>
-        <main className="flex-1 overflow-y-auto bg-muted/10 p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
+    <TooltipProvider>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto bg-background">
+          <div className="h-full px-4 py-6 md:px-6 lg:px-8">
             {children}
           </div>
         </main>
       </div>
-    </div>
+    </TooltipProvider>
   )
 } 

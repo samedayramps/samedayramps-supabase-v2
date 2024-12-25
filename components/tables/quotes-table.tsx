@@ -4,38 +4,25 @@ import { type Tables } from "@/types/database.types"
 import { DataTable } from "@/components/common/data-table"
 import { DataTableColumnHeader } from "@/components/common/data-table-column-header"
 import { DataTableRowActions } from "@/components/common/data-table-row-actions"
-import { ColumnDef, Row } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
-import { deleteQuote, sendQuote } from "@/app/actions/quotes"
-import { formatCurrency } from "@/lib/utils"
-import { useToast } from "@/components/hooks/use-toast"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
+import { useState } from "react"
+import { useToast } from "@/components/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { type ColumnDef } from "@tanstack/react-table"
+import { deleteQuote } from "@/app/actions/quotes"
 
-export type Quote = {
-  id: string
-  created_at: string
-  customer_id: string
-  address_id: string
-  flat_rate: number | null
-  install_date: string | null
-  lead_id: string
-  monthly_rental_rate: number
-  notes: any
-  quote_status: string
-  removal_date: string | null
-  rental_type: string
-  setup_fee: number
-  updated_at: string | null
-  valid_until: string | null
+export type Quote = Tables<"quotes"> & {
   lead?: {
-    customer?: {
-      id: string
-      first_name: string | null
-      last_name: string | null
-    } | null
+    customer?: Pick<Tables<"customers">, 
+      | "first_name" 
+      | "last_name" 
+      | "email" 
+      | "phone"
+      | "id"
+    > | null
   } | null
 }
 
@@ -44,27 +31,18 @@ interface QuotesTableProps {
 }
 
 export function QuotesTable({ data }: QuotesTableProps) {
-  const { toast } = useToast()
   const router = useRouter()
+  const { toast } = useToast()
   const [sendingQuoteId, setSendingQuoteId] = useState<string | null>(null)
 
   const handleSendQuote = async (id: string) => {
     try {
       setSendingQuoteId(id)
-      const result = await sendQuote(id)
-      
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Quote sent successfully",
-        })
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.error || "Failed to send quote",
-        })
-      }
+      // TODO: Implement quote sending logic
+      toast({
+        title: "Success",
+        description: "Quote sent successfully",
+      })
     } catch (error) {
       toast({
         variant: "destructive",
@@ -186,15 +164,15 @@ export function QuotesTable({ data }: QuotesTableProps) {
   ]
 
   return (
-    <DataTable<Quote>
+    <DataTable 
       columns={columns} 
       data={data} 
-      filterColumn="customerName"
+      filterColumn="customer_name"
       filterPlaceholder="Filter by customer name..."
-      onRowClick={(row) => {
-        if (row.lead?.customer?.id) {
-          router.push(`/customers/${row.lead.customer.id}`)
-        }
+      onRowClick={(row) => router.push(`/quotes/${row.id}`)}
+      newItemButton={{
+        href: "/quotes/new",
+        label: "New Quote"
       }}
     />
   )

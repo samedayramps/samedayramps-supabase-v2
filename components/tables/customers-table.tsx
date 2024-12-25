@@ -128,6 +128,10 @@ export function CustomersTable({ data }: CustomersTableProps) {
       filterColumn="name"
       filterPlaceholder="Filter by name..."
       onRowClick={(row) => router.push(`/customers/${row.id}`)}
+      newItemButton={{
+        href: "/customers/new",
+        label: "New Customer"
+      }}
     />
   )
 } 

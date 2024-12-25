@@ -184,6 +184,10 @@ export function InvoicesTable({ data }: InvoicesTableProps) {
           router.push(`/customers/${row.agreement.quote.lead.customer.id}`)
         }
       }}
+      newItemButton={{
+        href: "/invoices/new",
+        label: "New Invoice"
+      }}
     />
   )
 } 
