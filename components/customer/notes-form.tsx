@@ -33,14 +33,14 @@ export function NotesForm({ customerId, onNoteAdded }: NotesFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Add a note..."
-        className="min-h-[100px]"
+        className="h-10 min-h-0 resize-none py-2"
       />
-      <Button type="submit" disabled={!content.trim() || isSubmitting}>
+      <Button type="submit" disabled={!content.trim() || isSubmitting} className="shrink-0">
         {isSubmitting ? 'Adding...' : 'Add Note'}
       </Button>
     </form>

@@ -10,6 +10,7 @@ import { CalendarDays, Clock, ArrowRight, ChevronDown, Phone } from "lucide-reac
 import Link from "next/link"
 import { useState } from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { LeadInfo } from "./lead-info"
 
 type JobProgressProps = {
   lead?: Tables<"leads"> | null
@@ -18,6 +19,21 @@ type JobProgressProps = {
   installation?: Tables<"installations"> | null
   invoice?: Tables<"invoices"> | null
   customer: Tables<"customers">
+}
+
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline"
+
+function mapVariantToBadge(variant: string): BadgeVariant {
+  switch (variant) {
+    case 'success':
+      return 'default'
+    case 'warning':
+      return 'secondary'
+    case 'destructive':
+      return 'destructive'
+    default:
+      return 'outline'
+  }
 }
 
 export function JobProgress(props: JobProgressProps) {
@@ -62,7 +78,7 @@ export function JobProgress(props: JobProgressProps) {
         <div className="text-right">
           <div className="text-sm font-medium">Status</div>
           <Badge 
-            variant={progress.stages[progress.currentStage]?.variant || "outline"}
+            variant={mapVariantToBadge(progress.stages[progress.currentStage]?.variant || "outline")}
             className="mt-1"
           >
             {progress.stages[progress.currentStage]?.status || "Not Started"}
@@ -86,7 +102,7 @@ export function JobProgress(props: JobProgressProps) {
               <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                   <Badge 
-                    variant={stage.variant}
+                    variant={mapVariantToBadge(stage.variant)}
                     className="w-24 justify-center"
                   >
                     {stage.status}
@@ -99,34 +115,11 @@ export function JobProgress(props: JobProgressProps) {
                 )} />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 space-y-2">
-                  {stage.key === 'lead' && stage.details && (
-                    <>
-                      {stage.details.source && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Source:</span>
-                          <span>{stage.details.source}</span>
-                        </div>
-                      )}
-                      {stage.details.mobilityType && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Mobility Type:</span>
-                          <span>{stage.details.mobilityType}</span>
-                        </div>
-                      )}
-                      {stage.details.timeline && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Timeline:</span>
-                          <span>{stage.details.timeline}</span>
-                        </div>
-                      )}
-                      {stage.details.notes && (
-                        <div className="mt-4">
-                          <div className="text-muted-foreground mb-1">Notes:</div>
-                          <div className="text-sm whitespace-pre-wrap">{stage.details.notes}</div>
-                        </div>
-                      )}
-                      <div className="mt-4 flex justify-end">
+                <div className="border-t p-4">
+                  {stage.key === 'lead' && props.lead && (
+                    <div className="space-y-4">
+                      <LeadInfo lead={props.lead} />
+                      <div className="flex justify-end">
                         <Link href={`/customers/${props.customer.id}/call`}>
                           <Button size="sm" variant="outline">
                             <Phone className="h-4 w-4 mr-2" />
@@ -134,7 +127,7 @@ export function JobProgress(props: JobProgressProps) {
                           </Button>
                         </Link>
                       </div>
-                    </>
+                    </div>
                   )}
                   {stage.key === 'quote' && stage.details && (
                     <>

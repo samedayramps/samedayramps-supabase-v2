@@ -3,6 +3,8 @@
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 import { type Tables } from "@/types/database.types"
+import { revalidatePath } from "next/cache"
+import { auth } from "@/lib/auth"
 
 type NoteWithCustomer = Tables<"notes"> & {
   customers: {
@@ -93,4 +95,32 @@ export async function deleteNote(noteId: string) {
   if (error) {
     throw new Error(`Error deleting note: ${error.message}`)
   }
+}
+
+interface CreateNoteData {
+  content: string
+  customerId: string
+}
+
+export async function createNote(data: CreateNoteData) {
+  const supabase = await createClient()
+  const session = await auth()
+
+  if (!session) {
+    throw new Error("Not authenticated")
+  }
+
+  const { error } = await supabase
+    .from("notes")
+    .insert({
+      content: data.content,
+      customer_id: data.customerId,
+      created_by: session.user.id,
+    })
+
+  if (error) {
+    throw new Error(`Error creating note: ${error.message}`)
+  }
+
+  revalidatePath(`/customers/${data.customerId}`)
 } 

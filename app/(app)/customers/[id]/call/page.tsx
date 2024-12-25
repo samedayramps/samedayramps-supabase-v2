@@ -16,6 +16,9 @@ export default async function CustomerCallPage({ params }: CustomerCallPageProps
     notFound()
   }
 
+  // Get the most recent lead
+  const latestLead = customer.leads?.[0] || null
+
   const breadcrumbs = [
     { label: "Customers", href: "/customers" },
     { label: `${customer.first_name} ${customer.last_name}`, href: `/customers/${customer.id}` },
@@ -25,7 +28,7 @@ export default async function CustomerCallPage({ params }: CustomerCallPageProps
   return (
     <div className="space-y-4">
       <Breadcrumbs items={breadcrumbs} />
-      <CallCustomer customer={customer} lead={null} />
+      <CallCustomer customer={customer} lead={latestLead} />
     </div>
   )
 } 
