@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'Missing environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY'
+  )
+}
+
 const leadSchema = z.object({
   customer: z.object({
     first_name: z.string(),
@@ -22,8 +28,8 @@ console.log('Environment check:', {
 
 // Initialize Supabase client with service role key for admin access
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
   {
     auth: {
       autoRefreshToken: false,
@@ -75,6 +81,7 @@ export async function POST(request: Request) {
       throw customerError
     }
 
+    
     console.log('Customer created successfully:', JSON.stringify(customer, null, 2))
 
     console.log('Attempting to create lead...')
