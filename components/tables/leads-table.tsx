@@ -1,24 +1,31 @@
 "use client"
 
-import { type Tables } from "@/types/database.types"
+import { type Database } from "@/types/database.types"
 import { DataTable } from "@/components/common/data-table"
 import { DataTableColumnHeader } from "@/components/common/data-table-column-header"
 import { DataTableRowActions } from "@/components/common/data-table-row-actions"
 import { Badge } from "@/components/ui/badge"
 import { LEAD_STATUS } from "@/lib/constants"
-import { ColumnDef, Row } from "@tanstack/react-table"
+import { ColumnDef } from "@tanstack/react-table"
 import { deleteLead } from "@/app/actions/leads"
+import { formatDateTime } from "@/lib/utils/format"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-export type Lead = Tables<"leads"> & {
-  customer?: Pick<Tables<"customers">, 
+type DbLead = Database["public"]["Tables"]["leads"]["Row"]
+type DbCustomer = Database["public"]["Tables"]["customers"]["Row"]
+type DbAddress = Database["public"]["Tables"]["addresses"]["Row"]
+
+export type Lead = DbLead & {
+  customer?: (Pick<DbCustomer, 
     | "first_name" 
     | "last_name" 
     | "email" 
     | "phone"
     | "id"
-  > | null
-  address?: Tables<"addresses">[] | null
+  > & {
+    addresses?: DbAddress[]
+  }) | null
 }
 
 interface LeadsTableProps {
@@ -28,16 +35,52 @@ interface LeadsTableProps {
 export function LeadsTable({ data }: LeadsTableProps) {
   const router = useRouter()
 
+  const handleRowClick = (lead: Lead) => {
+    if (lead.customer?.id) {
+      router.push(`/customers/${lead.customer.id}`)
+    }
+  }
+
   const columns: ColumnDef<Lead>[] = [
+    {
+      accessorKey: "id",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="ID" />
+      ),
+      cell: ({ row }) => {
+        const id = row.getValue("id") as string
+        return (
+          <div className="font-mono text-xs">
+            {id.slice(0, 8)}
+          </div>
+        )
+      },
+    },
     {
       id: "firstName",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="First Name" />
       ),
       accessorFn: (row) => row.customer?.first_name,
-      cell: ({ row }) => (
-        <div className="capitalize">{row.original.customer?.first_name}</div>
-      ),
+      cell: ({ row }) => {
+        const customerId = row.original.customer?.id
+        const firstName = row.original.customer?.first_name
+
+        return (
+          <div className="capitalize">
+            {customerId ? (
+              <Link 
+                href={`/customers/${customerId}`}
+                className="hover:underline text-primary"
+              >
+                {firstName}
+              </Link>
+            ) : (
+              firstName
+            )}
+          </div>
+        )
+      },
     },
     {
       id: "lastName",
@@ -45,9 +88,25 @@ export function LeadsTable({ data }: LeadsTableProps) {
         <DataTableColumnHeader column={column} title="Last Name" />
       ),
       accessorFn: (row) => row.customer?.last_name,
-      cell: ({ row }) => (
-        <div className="capitalize">{row.original.customer?.last_name}</div>
-      ),
+      cell: ({ row }) => {
+        const customerId = row.original.customer?.id
+        const lastName = row.original.customer?.last_name
+
+        return (
+          <div className="capitalize">
+            {customerId ? (
+              <Link 
+                href={`/customers/${customerId}`}
+                className="hover:underline text-primary"
+              >
+                {lastName}
+              </Link>
+            ) : (
+              lastName
+            )}
+          </div>
+        )
+      },
     },
     {
       id: "phone",
@@ -61,9 +120,25 @@ export function LeadsTable({ data }: LeadsTableProps) {
           <a 
             href={`tel:${phone}`} 
             className="hover:underline text-primary"
+            onClick={(e) => e.stopPropagation()}
           >
             {phone}
           </a>
+        ) : null
+      },
+    },
+    {
+      id: "address",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Address" />
+      ),
+      accessorFn: (row) => row.customer?.addresses?.[0]?.formatted_address,
+      cell: ({ row }) => {
+        const address = row.original.customer?.addresses?.[0]
+        return address ? (
+          <div className="max-w-[300px] truncate" title={address.formatted_address}>
+            {address.formatted_address}
+          </div>
         ) : null
       },
     },
@@ -91,32 +166,18 @@ export function LeadsTable({ data }: LeadsTableProps) {
       },
     },
     {
-      accessorKey: "mobility_type",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Mobility Type" />
-      ),
-    },
-    {
-      accessorKey: "ramp_length",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Ramp Length" />
-      ),
-      cell: ({ row }) => {
-        const length = row.getValue("ramp_length")
-        return length ? `${length} ft` : null
-      },
-    },
-    {
       accessorKey: "timeline",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Timeline" />
       ),
-    },
-    {
-      accessorKey: "rental_duration",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Rental Duration" />
-      ),
+      cell: ({ row }) => {
+        const timeline = row.getValue("timeline") as string | null
+        return timeline ? (
+          <div className="capitalize">
+            {timeline.toLowerCase().replace(/_/g, ' ')}
+          </div>
+        ) : null
+      }
     },
     {
       accessorKey: "created_at",
@@ -124,7 +185,12 @@ export function LeadsTable({ data }: LeadsTableProps) {
         <DataTableColumnHeader column={column} title="Created" />
       ),
       cell: ({ row }) => {
-        return new Date(row.getValue("created_at")).toLocaleDateString()
+        const date = row.getValue("created_at") as string
+        return (
+          <div className="whitespace-nowrap">
+            {formatDateTime(date)}
+          </div>
+        )
       },
     },
     {
@@ -132,12 +198,13 @@ export function LeadsTable({ data }: LeadsTableProps) {
       cell: ({ row }) => {
         const lead = row.original
         return (
-          <DataTableRowActions
-            editHref={`/leads/${lead.id}/edit`}
-            deleteAction={async () => {
-              await deleteLead(lead.id)
-            }}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <DataTableRowActions
+              deleteAction={async () => {
+                await deleteLead(lead.id)
+              }}
+            />
+          </div>
         )
       },
     },
@@ -149,11 +216,7 @@ export function LeadsTable({ data }: LeadsTableProps) {
       data={data} 
       filterColumn="firstName"
       filterPlaceholder="Filter by first name..."
-      onRowClick={(row) => {
-        if (row.customer?.id) {
-          router.push(`/customers/${row.customer.id}`)
-        }
-      }}
+      onRowClick={handleRowClick}
       newItemButton={{
         href: "/leads/new",
         label: "New Lead"

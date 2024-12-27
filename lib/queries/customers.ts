@@ -1,12 +1,10 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server"
-import { cookies } from "next/headers"
 import { type Tables } from "@/types/database.types"
 
 export async function getCustomerWithDetails(id: string) {
-  const cookieStore = cookies()
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: customer, error: customerError } = await supabase
     .from("customers")
@@ -35,8 +33,7 @@ export async function getCustomerWithDetails(id: string) {
 }
 
 export async function getCustomers() {
-  const cookieStore = cookies()
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: customers, error: customersError } = await supabase
     .from("customers")

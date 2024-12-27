@@ -1,34 +1,10 @@
-import { createClient } from "@/utils/supabase/server"
+"use server"
+
 import { type Tables } from "@/types/database.types"
-
-type Lead = Tables<"leads"> & {
-  customer?: Pick<Tables<"customers">, 
-    | "first_name" 
-    | "last_name" 
-    | "email" 
-    | "phone"
-  > | null
-  address?: Tables<"addresses">[] | null
-}
-
-type Quote = Tables<"quotes"> & {
-  lead?: Lead | null
-}
-
-type Agreement = Tables<"agreements"> & {
-  quote?: Quote | null
-}
-
-type Installation = Tables<"installations"> & {
-  agreement?: Agreement | null
-}
-
-type Invoice = Tables<"invoices"> & {
-  installation?: Installation | null
-}
+import { createClient } from "@/utils/supabase/server"
 
 export async function getJobProgress(leadId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: lead } = await supabase
     .from('leads')

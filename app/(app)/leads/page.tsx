@@ -1,25 +1,24 @@
-import { createClient } from "@/utils/supabase/server";
+import { getLeads } from "@/app/actions/leads";
 import { LeadsTable } from "@/components/tables/leads-table";
 
 export default async function LeadsPage() {
-  const supabase = await createClient();
-  const { data: leads, error } = await supabase
-    .from("leads")
-    .select(`
-      *,
-      customers(*)
-    `)
-    .order('created_at', { ascending: false });
+  try {
+    const leads = await getLeads();
 
-  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Leads</h1>
+        <LeadsTable data={leads || []} />
+      </div>
+    );
+  } catch (error) {
     console.error('Error fetching leads:', error);
-    // TODO: Handle error state
+    // TODO: Add proper error handling UI
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Leads</h1>
+        <div className="text-red-500">Failed to load leads</div>
+      </div>
+    );
   }
-
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Leads</h1>
-      <LeadsTable data={leads || []} />
-    </div>
-  );
 } 

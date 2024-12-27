@@ -23,8 +23,8 @@ const leadSchema = z.object({
       place_id: z.string().nullable(),
     }),
   }),
-  timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']),
-  notes: z.string().nullable(),
+  timeline: z.string().nullable(),
+  notes: z.union([z.string(), z.record(z.any())]).nullable(),
 })
 
 // CORS preflight

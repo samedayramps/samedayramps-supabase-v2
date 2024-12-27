@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 import { type Tables } from "@/types/database.types"
 
 export async function deleteCustomer(id: string): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     const { error } = await supabase
@@ -32,7 +32,7 @@ type CustomerData = Pick<
 >
 
 export async function createCustomer(data: CustomerData): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   try {
     const { error } = await supabase
@@ -50,7 +50,7 @@ export async function createCustomer(data: CustomerData): Promise<void> {
 }
 
 export async function updateCustomer(id: string, data: CustomerData): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     const { error } = await supabase

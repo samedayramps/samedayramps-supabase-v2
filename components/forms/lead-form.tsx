@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useFormState } from "react-dom"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,11 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/hooks/use-toast"
 import { type Tables } from "@/types/database.types"
-import { updateLead } from "@/app/actions/leads"
+import { createLead, updateLead, type State } from "@/app/actions/leads"
 import { AddressAutocomplete } from "@/components/common/address-autocomplete"
 import { Textarea } from "@/components/ui/textarea"
 import { GoogleMapsScript } from "@/components/common/google-maps-script"
@@ -34,8 +34,8 @@ const leadFormSchema = z.object({
   customer: z.object({
     first_name: z.string().min(1, "First name is required"),
     last_name: z.string().min(1, "Last name is required"),
-    email: z.string().email().optional().nullable(),
-    phone: z.string().min(10, "Phone number must be at least 10 digits").optional().nullable(),
+    email: z.string().email().nullable(),
+    phone: z.string().min(10, "Phone number must be at least 10 digits").nullable(),
     address: z.object({
       formatted_address: z.string().min(1, "Installation address is required"),
       street_number: z.string().nullable(),
@@ -49,9 +49,9 @@ const leadFormSchema = z.object({
       place_id: z.string().nullable(),
     }),
   }),
-  timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']),
+  timeline: z.string().nullable(),
   status: z.string().default('NEW'),
-  notes: z.string().optional().nullable(),
+  notes: z.string().nullable(),
 })
 
 type LeadFormValues = z.infer<typeof leadFormSchema>
@@ -70,10 +70,16 @@ interface LeadFormProps {
   initialData?: Lead
 }
 
+const initialState: State = {
+  errors: {},
+  message: null,
+}
+
 export function LeadForm({ initialData }: LeadFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const [state, formAction] = useFormState(createLead, initialState)
   
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -107,11 +113,22 @@ export function LeadForm({ initialData }: LeadFormProps) {
           place_id: null,
         },
       },
-      timeline: initialData?.timeline as any ?? 'FLEXIBLE',
+      timeline: initialData?.timeline ?? null,
       status: initialData?.status ?? 'NEW',
-      notes: initialData?.notes as string ?? "",
+      notes: initialData?.notes ? JSON.stringify(initialData.notes) : null,
     },
   })
+
+  // Handle server-side validation errors
+  useEffect(() => {
+    if (state.message) {
+      toast({
+        variant: state.errors ? "destructive" : "default",
+        title: state.errors ? "Error" : "Success",
+        description: state.message,
+      })
+    }
+  }, [state, toast])
 
   const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<google.maps.places.PlaceResult | null>(null)
 
@@ -119,131 +136,46 @@ export function LeadForm({ initialData }: LeadFormProps) {
     setIsSubmitting(true)
     
     try {
-      const supabase = createClient()
-      
       if (initialData) {
-        // Get customer ID first
-        const { data: lead, error: leadError } = await supabase
-          .from('leads')
-          .select('customer_id')
-          .eq('id', initialData.id)
-          .single()
-
-        if (leadError) throw leadError
-
-        // Update existing lead
         await updateLead(initialData.id, {
           status: values.status,
           timeline: values.timeline,
-          notes: values.notes || null,
-          mobility_type: null,
-          ramp_length: null,
-          rental_duration: null,
-        })
-
-        // Update or create address if place details exist
-        if (selectedPlaceDetails && lead.customer_id) {
-          const location = selectedPlaceDetails.geometry?.location
-          const addressData = {
-            formatted_address: selectedPlaceDetails.formatted_address!,
-            street_number: getAddressComponent(selectedPlaceDetails, 'street_number'),
-            street_name: getAddressComponent(selectedPlaceDetails, 'route'),
-            city: getAddressComponent(selectedPlaceDetails, 'locality'),
-            state: getAddressComponent(selectedPlaceDetails, 'administrative_area_level_1'),
-            postal_code: getAddressComponent(selectedPlaceDetails, 'postal_code'),
-            country: getAddressComponent(selectedPlaceDetails, 'country'),
-            lat: location?.lat() ?? null,
-            lng: location?.lng() ?? null,
-            place_id: selectedPlaceDetails.place_id ?? null,
-            customer_id: lead.customer_id
-          }
-
-          const { error: addressError } = await supabase
-            .from('addresses')
-            .upsert(addressData)
-            .eq('customer_id', lead.customer_id)
-
-          if (addressError) throw addressError
-        }
-
-        toast({
-          title: "Success",
-          description: "Lead updated successfully",
+          notes: values.notes,
         })
       } else {
-        // Create new lead and address
-        try {
-          // First create the customer
-          const { data: customer, error: customerError } = await supabase
-            .from('customers')
-            .insert({
-              first_name: values.customer.first_name,
-              last_name: values.customer.last_name,
-              email: values.customer.email || null,
-              phone: values.customer.phone || null,
-            })
-            .select()
-            .single()
-
-          if (customerError) throw customerError
-
-          // Then create the lead
-          const { data: lead, error: leadError } = await supabase
-            .from('leads')
-            .insert({
-              customer_id: customer.id,
-              status: values.status,
-              timeline: values.timeline,
-              notes: values.notes || null,
-            })
-            .select()
-            .single()
-
-          if (leadError) throw leadError
-
-          // Create address if place details exist
-          if (selectedPlaceDetails && customer) {
-            const location = selectedPlaceDetails.geometry?.location
-            const addressData = {
-              formatted_address: selectedPlaceDetails.formatted_address!,
-              street_number: getAddressComponent(selectedPlaceDetails, 'street_number'),
-              street_name: getAddressComponent(selectedPlaceDetails, 'route'),
-              city: getAddressComponent(selectedPlaceDetails, 'locality'),
-              state: getAddressComponent(selectedPlaceDetails, 'administrative_area_level_1'),
-              postal_code: getAddressComponent(selectedPlaceDetails, 'postal_code'),
-              country: getAddressComponent(selectedPlaceDetails, 'country'),
-              lat: location?.lat() ?? null,
-              lng: location?.lng() ?? null,
-              place_id: selectedPlaceDetails.place_id ?? null,
-              customer_id: customer.id
-            }
-
-            const { error: addressError } = await supabase
-              .from('addresses')
-              .insert(addressData)
-
-            if (addressError) {
-              console.error('Error creating address:', addressError)
-              throw addressError
-            }
-          }
-
-          toast({
-            title: "Success",
-            description: "Lead created successfully",
-          })
-        } catch (error) {
-          console.error('Error creating lead:', error)
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to create lead",
-          })
-        }
+        const formData = new FormData()
+        
+        // Add customer data
+        formData.append('customer.first_name', values.customer.first_name)
+        formData.append('customer.last_name', values.customer.last_name)
+        formData.append('customer.email', values.customer.email || '')
+        formData.append('customer.phone', values.customer.phone || '')
+        
+        // Add address data
+        formData.append('customer.address.formatted_address', values.customer.address.formatted_address)
+        formData.append('customer.address.street_number', values.customer.address.street_number || '')
+        formData.append('customer.address.street_name', values.customer.address.street_name || '')
+        formData.append('customer.address.city', values.customer.address.city || '')
+        formData.append('customer.address.state', values.customer.address.state || '')
+        formData.append('customer.address.postal_code', values.customer.address.postal_code || '')
+        formData.append('customer.address.country', values.customer.address.country || '')
+        formData.append('customer.address.lat', values.customer.address.lat?.toString() || '')
+        formData.append('customer.address.lng', values.customer.address.lng?.toString() || '')
+        formData.append('customer.address.place_id', values.customer.address.place_id || '')
+        
+        // Add other data
+        formData.append('timeline', values.timeline || '')
+        formData.append('status', values.status)
+        formData.append('notes', values.notes || '')
+        
+        // Use formAction from useFormState
+        formAction(formData)
       }
 
-      router.push('/leads')
-      router.refresh()
+      if (!state.errors) {
+        router.push('/leads')
+        router.refresh()
+      }
     } catch (error) {
       console.error('Error saving lead:', error)
       toast({
@@ -256,21 +188,17 @@ export function LeadForm({ initialData }: LeadFormProps) {
     }
   }
 
-  function getAddressComponent(
-    place: google.maps.places.PlaceResult,
-    type: string,
-    useShortName: boolean = false
-  ): string | null {
-    const component = place.address_components?.find(
-      (component) => component.types.includes(type)
-    )
-    return component ? (useShortName ? component.short_name : component.long_name) : null
-  }
-
   return (
     <GoogleMapsScript>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form action={formAction} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Show form-level errors */}
+          {state.message && state.errors && (
+            <div className="bg-destructive/15 text-destructive p-3 rounded-md">
+              {state.message}
+            </div>
+          )}
+
           <div className="bg-muted/50 p-6 rounded-lg">
             <h2 className="text-lg font-semibold mb-4">Contact Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -363,7 +291,6 @@ export function LeadForm({ initialData }: LeadFormProps) {
                             place_id: placeDetails.place_id ?? null,
                           })
                         } else {
-                          // Handle manual input without place selection
                           field.onChange({
                             ...field.value,
                             formatted_address: value,
@@ -389,7 +316,7 @@ export function LeadForm({ initialData }: LeadFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>How soon do you need the ramp?</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select timeline" />
@@ -423,6 +350,9 @@ export function LeadForm({ initialData }: LeadFormProps) {
                       className="min-h-[100px]"
                       {...field}
                       value={field.value ?? ''}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -438,4 +368,15 @@ export function LeadForm({ initialData }: LeadFormProps) {
       </Form>
     </GoogleMapsScript>
   )
+}
+
+function getAddressComponent(
+  place: google.maps.places.PlaceResult,
+  type: string,
+  useShortName: boolean = false
+): string | null {
+  const component = place.address_components?.find(
+    (component) => component.types.includes(type)
+  )
+  return component ? (useShortName ? component.short_name : component.long_name) : null
 } 

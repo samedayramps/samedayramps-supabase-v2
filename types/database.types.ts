@@ -126,6 +126,45 @@ export type Database = {
           },
         ]
       }
+      components: {
+        Row: {
+          created_at: string
+          id: string
+          length: number
+          name: string
+          notes: string | null
+          price_per_day: number
+          price_per_month: number
+          type: string
+          updated_at: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          length: number
+          name: string
+          notes?: string | null
+          price_per_day: number
+          price_per_month: number
+          type: string
+          updated_at?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          length?: number
+          name?: string
+          notes?: string | null
+          price_per_day?: number
+          price_per_month?: number
+          type?: string
+          updated_at?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
@@ -277,10 +316,7 @@ export type Database = {
           created_at: string
           customer_id: string | null
           id: string
-          mobility_type: string | null
           notes: Json | null
-          ramp_length: number | null
-          rental_duration: string | null
           status: string
           timeline: string | null
           updated_at: string | null
@@ -289,10 +325,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           id?: string
-          mobility_type?: string | null
           notes?: Json | null
-          ramp_length?: number | null
-          rental_duration?: string | null
           status?: string
           timeline?: string | null
           updated_at?: string | null
@@ -301,10 +334,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           id?: string
-          mobility_type?: string | null
           notes?: Json | null
-          ramp_length?: number | null
-          rental_duration?: string | null
           status?: string
           timeline?: string | null
           updated_at?: string | null
@@ -608,45 +638,6 @@ export type Database = {
           },
         ]
       }
-      components: {
-        Row: {
-          id: string
-          created_at: string
-          name: string
-          type: 'RAMP' | 'LANDING'
-          length: number
-          width: number | null
-          price_per_day: number
-          price_per_month: number
-          notes: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          name: string
-          type: 'RAMP' | 'LANDING'
-          length: number
-          width: number | null
-          price_per_day: number
-          price_per_month: number
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          created_at?: string
-          name?: string
-          type?: 'RAMP' | 'LANDING'
-          length?: number
-          width?: number | null
-          price_per_day?: number
-          price_per_month?: number
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -655,7 +646,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      lead_status:
+        | "NEW"
+        | "CONTACTED"
+        | "QUALIFIED"
+        | "UNQUALIFIED"
+        | "QUOTED"
+        | "WON"
+        | "LOST"
       setting_type: "number" | "text" | "boolean"
+      timeline: "ASAP" | "THIS_WEEK" | "THIS_MONTH" | "FLEXIBLE"
     }
     CompositeTypes: {
       [_ in never]: never

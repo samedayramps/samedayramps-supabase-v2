@@ -1,9 +1,9 @@
 import { createClient } from "@/utils/supabase/server"
-import { formatDate } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils/format"
 import Link from "next/link"
 
 async function getRecentLeads() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: leads } = await supabase
     .from('leads')
@@ -11,8 +11,9 @@ async function getRecentLeads() {
       id,
       created_at,
       status,
-      mobility_type,
+      timeline,
       customer:customers (
+        id,
         first_name,
         last_name
       )
@@ -31,16 +32,22 @@ export async function RecentLeads() {
       {leads.map((lead) => (
         <div key={lead.id} className="flex items-center">
           <div className="space-y-1">
-            <Link 
-              href={`/leads/${lead.id}`}
-              className="font-medium hover:underline"
-            >
-              {lead.customer?.first_name} {lead.customer?.last_name}
-            </Link>
+            {lead.customer?.id ? (
+              <Link 
+                href={`/customers/${lead.customer.id}`}
+                className="font-medium hover:underline"
+              >
+                {lead.customer.first_name} {lead.customer.last_name}
+              </Link>
+            ) : (
+              <span className="font-medium">
+                {lead.customer?.first_name} {lead.customer?.last_name}
+              </span>
+            )}
             <div className="flex items-center gap-x-2 text-sm text-muted-foreground">
-              <span>{formatDate(lead.created_at)}</span>
+              <span className="whitespace-nowrap">{formatDateTime(lead.created_at)}</span>
               <span>•</span>
-              <span>{lead.mobility_type || 'Not specified'}</span>
+              <span>{lead.timeline || 'No timeline'}</span>
               <span>•</span>
               <span className="capitalize">{lead.status.toLowerCase()}</span>
             </div>

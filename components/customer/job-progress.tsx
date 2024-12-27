@@ -4,7 +4,7 @@ import { type Tables } from "@/types/database.types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { calculateJobProgress } from "@/lib/queries/job-progress"
+import { calculateJobProgress, type JobProgressData } from "@/lib/utils/job-progress"
 import { formatCurrency } from "@/lib/utils"
 import { CalendarDays, Clock, ArrowRight, ChevronDown, Phone } from "lucide-react"
 import Link from "next/link"
@@ -12,16 +12,11 @@ import { useState } from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { LeadInfo } from "./lead-info"
 
-type JobProgressProps = {
-  lead?: Tables<"leads"> | null
-  quote?: Tables<"quotes"> | null
-  agreement?: Tables<"agreements"> | null
-  installation?: Tables<"installations"> | null
-  invoice?: Tables<"invoices"> | null
-  customer: Tables<"customers">
-}
+type JobProgressProps = JobProgressData
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline"
+
+type StageKey = 'lead' | 'quote' | 'agreement' | 'installation' | 'invoice'
 
 function mapVariantToBadge(variant: string): BadgeVariant {
   switch (variant) {
@@ -38,9 +33,9 @@ function mapVariantToBadge(variant: string): BadgeVariant {
 
 export function JobProgress(props: JobProgressProps) {
   const progress = calculateJobProgress(props)
-  const [expandedStage, setExpandedStage] = useState<string | null>(null)
+  const [expandedStage, setExpandedStage] = useState<StageKey | null>(null)
 
-  const toggleStage = (stageKey: string) => {
+  const toggleStage = (stageKey: StageKey) => {
     setExpandedStage(prev => prev === stageKey ? null : stageKey)
   }
 
@@ -78,17 +73,17 @@ export function JobProgress(props: JobProgressProps) {
         <div className="text-right">
           <div className="text-sm font-medium">Status</div>
           <Badge 
-            variant={mapVariantToBadge(progress.stages[progress.currentStage]?.variant || "outline")}
+            variant={mapVariantToBadge(progress.stages[progress.currentStage as StageKey]?.variant || "outline")}
             className="mt-1"
           >
-            {progress.stages[progress.currentStage]?.status || "Not Started"}
+            {progress.stages[progress.currentStage as StageKey]?.status || "Not Started"}
           </Badge>
         </div>
       </div>
 
       {/* Progress Stages */}
       <div className="flex flex-col gap-2">
-        {Object.entries(progress.stages).map(([key, stage]) => (
+        {(Object.entries(progress.stages) as [StageKey, typeof progress.stages[StageKey]][]).map(([key, stage]) => (
           <Collapsible
             key={key}
             open={expandedStage === key}
@@ -116,7 +111,7 @@ export function JobProgress(props: JobProgressProps) {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="border-t p-4">
-                  {stage.key === 'lead' && props.lead && (
+                  {key === 'lead' && props.lead && (
                     <div className="space-y-4">
                       <LeadInfo lead={props.lead} />
                       <div className="flex justify-end">
@@ -129,7 +124,7 @@ export function JobProgress(props: JobProgressProps) {
                       </div>
                     </div>
                   )}
-                  {stage.key === 'quote' && stage.details && (
+                  {key === 'quote' && stage.details && (
                     <>
                       {'monthlyRate' in stage.details && (
                         <div className="flex justify-between">
@@ -151,13 +146,13 @@ export function JobProgress(props: JobProgressProps) {
                       )}
                     </>
                   )}
-                  {stage.key === 'installation' && stage.details?.installedBy && (
+                  {key === 'installation' && stage.details && 'installedBy' in stage.details && stage.details.installedBy && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Installed By:</span>
                       <span>{stage.details.installedBy}</span>
                     </div>
                   )}
-                  {stage.key === 'invoice' && stage.details && (
+                  {key === 'invoice' && stage.details && (
                     <>
                       {'amount' in stage.details && (
                         <div className="flex justify-between">

@@ -50,7 +50,7 @@ function transformSubscriptionData(rawData: any): SubscriptionDetails {
 
 // Split the query into separate functions to reduce complexity
 async function fetchCustomerBasicInfo(customerId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from("customers")
     .select(`
@@ -70,7 +70,7 @@ async function fetchCustomerBasicInfo(customerId: string) {
 }
 
 async function fetchCustomerAddresses(customerId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from("addresses")
     .select('*')
@@ -81,7 +81,7 @@ async function fetchCustomerAddresses(customerId: string) {
 }
 
 async function fetchCustomerLeads(customerId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from("leads")
     .select('*')
@@ -92,7 +92,7 @@ async function fetchCustomerLeads(customerId: string) {
 }
 
 async function fetchCustomerQuotes(customerId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from("quotes")
     .select(`
@@ -120,7 +120,7 @@ async function fetchCustomerQuotes(customerId: string) {
 
 // Split subscription fetching into its own function with proper typing
 async function fetchSubscriptionDetails(subscriptionId: string): Promise<SubscriptionDetails> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from("subscriptions")
     .select(`
@@ -150,7 +150,7 @@ async function fetchSubscriptionDetails(subscriptionId: string): Promise<Subscri
 }
 
 async function fetchCustomerAgreements(customerId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // First, fetch agreements with minimal subscription data
   const { data: agreements, error: agreementsError } = await supabase

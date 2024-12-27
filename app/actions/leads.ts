@@ -3,7 +3,155 @@
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { type Tables } from "@/types/database.types"
+import { type Database, type Json } from "@/types/database.types"
+import { z } from "zod"
+
+// Validation schema for the form
+const LeadFormSchema = z.object({
+  customer: z.object({
+    first_name: z.string().min(1, "First name is required"),
+    last_name: z.string().min(1, "Last name is required"),
+    email: z.string().email().nullable(),
+    phone: z.string().min(10, "Phone number must be at least 10 digits").nullable(),
+    address: z.object({
+      formatted_address: z.string().min(1, "Installation address is required"),
+      street_number: z.string().nullable(),
+      street_name: z.string().nullable(),
+      city: z.string().nullable(),
+      state: z.string().nullable(),
+      postal_code: z.string().nullable(),
+      country: z.string().nullable(),
+      lat: z.number().nullable(),
+      lng: z.number().nullable(),
+      place_id: z.string().nullable(),
+    }),
+  }),
+  timeline: z.string().nullable(),
+  status: z.string().default('NEW'),
+  notes: z.string().nullable(),
+})
+
+export type State = {
+  errors?: {
+    customer?: string[];
+    timeline?: string[];
+    status?: string[];
+    notes?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createLead(prevState: State, formData: FormData) {
+  const validatedFields = LeadFormSchema.safeParse({
+    customer: {
+      first_name: formData.get('customer.first_name'),
+      last_name: formData.get('customer.last_name'),
+      email: formData.get('customer.email'),
+      phone: formData.get('customer.phone'),
+      address: {
+        formatted_address: formData.get('customer.address.formatted_address'),
+        street_number: formData.get('customer.address.street_number'),
+        street_name: formData.get('customer.address.street_name'),
+        city: formData.get('customer.address.city'),
+        state: formData.get('customer.address.state'),
+        postal_code: formData.get('customer.address.postal_code'),
+        country: formData.get('customer.address.country'),
+        lat: parseFloat(formData.get('customer.address.lat')?.toString() || ''),
+        lng: parseFloat(formData.get('customer.address.lng')?.toString() || ''),
+        place_id: formData.get('customer.address.place_id'),
+      },
+    },
+    timeline: formData.get('timeline'),
+    status: formData.get('status'),
+    notes: formData.get('notes'),
+  })
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Lead.',
+    }
+  }
+
+  const supabase = await createClient()
+  
+  try {
+    const { customer, timeline, status, notes } = validatedFields.data
+
+    // First create the customer
+    const { data: customerData, error: customerError } = await supabase
+      .from('customers')
+      .insert({
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        email: customer.email,
+        phone: customer.phone,
+      })
+      .select()
+      .single()
+
+    if (customerError) throw customerError
+
+    // Then create the lead
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .insert({
+        customer_id: customerData.id,
+        status,
+        timeline,
+        notes: notes ? JSON.parse(notes) as Json : null,
+      })
+      .select()
+      .single()
+
+    if (leadError) throw leadError
+
+    // Create address
+    if (customer.address) {
+      const { error: addressError } = await supabase
+        .from('addresses')
+        .insert({
+          ...customer.address,
+          customer_id: customerData.id,
+        })
+
+      if (addressError) throw addressError
+    }
+
+    revalidatePath('/leads')
+    redirect('/leads')
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to Create Lead.',
+    }
+  }
+}
+
+export async function updateLead(id: string, data: {
+  status: string
+  timeline: string | null
+  notes: string | null
+}) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('leads')
+      .update({
+        status: data.status,
+        timeline: data.timeline,
+        notes: data.notes ? JSON.parse(data.notes) as Json : null,
+      })
+      .match({ id })
+
+    if (error) throw error
+
+    revalidatePath('/leads')
+    redirect('/leads')
+  } catch (error) {
+    throw new Error('Failed to update lead')
+  }
+}
 
 export async function deleteLead(id: string): Promise<void> {
   const supabase = await createClient()
@@ -18,128 +166,33 @@ export async function deleteLead(id: string): Promise<void> {
 
     revalidatePath('/leads')
   } catch (error) {
-    console.error('Error deleting lead:', error)
     throw new Error('Failed to delete lead')
   }
 }
 
-type LeadData = {
-  customer: {
-    first_name: string
-    last_name: string
-    email: string | null
-    phone: string | null
-    address: {
-      formatted_address: string
-      street_number: string | null
-      street_name: string | null
-      city: string | null
-      state: string | null
-      postal_code: string | null
-      country: string | null
-      lat: number | null
-      lng: number | null
-      place_id: string | null
-    }
-  }
-  timeline: string
-  knows_length: 'YES' | 'NO'
-  ramp_length: number | null
-  knows_duration: 'YES' | 'NO'
-  rental_months: number | null
-  mobility_types: string[]
-  status: string
-  notes: string | null
-}
-
-export async function createLead(data: LeadData): Promise<void> {
-  const supabase = await createClient()
-  
-  try {
-    // First create the customer
-    const { data: customer, error: customerError } = await supabase
-      .from('customers')
-      .insert({
-        first_name: data.customer.first_name,
-        last_name: data.customer.last_name,
-        email: data.customer.email || null,
-        phone: data.customer.phone || null,
-      })
-      .select()
-      .single()
-
-    if (customerError) throw customerError
-
-    // Then create the lead with the customer_id
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .insert({
-        customer_id: customer.id,
-        status: data.status,
-        mobility_type: data.mobility_types?.length ? data.mobility_types.join(', ') : null,
-        ramp_length: data.knows_length === 'YES' ? data.ramp_length || null : null,
-        timeline: data.timeline,
-        rental_duration: data.knows_duration === 'YES' ? `${data.rental_months} MONTHS` : null,
-        notes: data.notes || null,
-      })
-      .select()
-      .single()
-
-    if (leadError) throw leadError
-
-    // Create address with all components
-    if (data.customer.address) {
-      const { error: addressError } = await supabase
-        .from('addresses')
-        .insert({
-          formatted_address: data.customer.address.formatted_address,
-          street_number: data.customer.address.street_number,
-          street_name: data.customer.address.street_name,
-          city: data.customer.address.city,
-          state: data.customer.address.state,
-          postal_code: data.customer.address.postal_code,
-          country: data.customer.address.country,
-          lat: data.customer.address.lat,
-          lng: data.customer.address.lng,
-          place_id: data.customer.address.place_id,
-          customer_id: customer.id,
-        })
-
-      if (addressError) throw addressError
-    }
-
-    revalidatePath('/leads')
-  } catch (error) {
-    console.error('Error creating lead:', error)
-    throw new Error('Failed to create lead')
-  }
-}
-
-type UpdateLeadData = Pick<
-  Tables<"leads">,
-  | "status" 
-  | "mobility_type" 
-  | "ramp_length" 
-  | "timeline" 
-  | "rental_duration"
-  | "notes"
->
-
-export async function updateLead(id: string, data: UpdateLeadData): Promise<void> {
+export async function getLeads() {
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase
+    const { data: leads, error } = await supabase
       .from('leads')
-      .update(data)
-      .match({ id })
+      .select(`
+        *,
+        customer:customers(
+          id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          addresses(*)
+        )
+      `)
+      .order('created_at', { ascending: false })
 
     if (error) throw error
 
-    revalidatePath('/leads')
-    redirect('/leads')
+    return leads
   } catch (error) {
-    console.error('Error updating lead:', error)
-    throw new Error('Failed to update lead')
+    throw new Error('Failed to fetch leads')
   }
 } 

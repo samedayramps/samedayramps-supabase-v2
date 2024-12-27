@@ -246,9 +246,12 @@ export function DataTable<TData>({
                     <TableCell 
                       key={cell.id}
                       onClick={(e) => {
-                        // Stop propagation if this is an actions cell
-                        if (cell.column.id === 'actions') {
-                          e.stopPropagation();
+                        // Stop propagation if this is an actions cell or a link
+                        if (
+                          cell.column.id === 'actions' ||
+                          (e.target as HTMLElement).closest('a')
+                        ) {
+                          e.stopPropagation()
                         }
                       }}
                     >

@@ -43,16 +43,14 @@ export function LeadInfo({ lead }: LeadInfoProps) {
           <p className="text-sm font-medium">{lead.timeline || 'Not specified'}</p>
         </div>
         <div className="flex flex-col sm:space-y-1.5">
-          <span className="text-xs sm:text-sm text-muted-foreground">Mobility Type</span>
-          <p className="text-sm font-medium">{lead.mobility_type || 'Not specified'}</p>
-        </div>
-        <div className="flex flex-col sm:space-y-1.5">
-          <span className="text-xs sm:text-sm text-muted-foreground">Ramp Length</span>
-          <p className="text-sm font-medium">{lead.ramp_length ? `${lead.ramp_length} feet` : 'Not specified'}</p>
-        </div>
-        <div className="flex flex-col sm:space-y-1.5">
-          <span className="text-xs sm:text-sm text-muted-foreground">Rental Duration</span>
-          <p className="text-sm font-medium">{lead.rental_duration || 'Not specified'}</p>
+          <span className="text-xs sm:text-sm text-muted-foreground">Notes</span>
+          <p className="text-sm font-medium">{
+            lead.notes 
+              ? typeof lead.notes === 'string' 
+                ? lead.notes 
+                : JSON.stringify(lead.notes)
+              : 'No notes'
+          }</p>
         </div>
       </div>
       <Separator className="my-4 sm:my-6" />
