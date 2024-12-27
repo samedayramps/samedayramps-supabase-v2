@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 import { z } from 'zod'
 
 // Validation schema for the incoming lead data
@@ -25,14 +26,41 @@ const leadSchema = z.object({
   timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']),
   knows_length: z.enum(['YES', 'NO']),
   ramp_length: z.number().nullable(),
-  knows_duration: z.enum(['YES', 'NO']),
-  rental_months: z.number().min(1).max(60).nullable(),
-  mobility_types: z.array(z.string()).optional().default([]),
   notes: z.string().nullable(),
 })
 
+// CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  })
+}
+
 export async function POST(request: Request) {
   try {
+    // Check API key
+    const headersList = headers()
+    const apiKey = headersList.get('Authorization')?.replace('Bearer ', '')
+    
+    if (!apiKey || apiKey !== process.env.EXTERNAL_API_KEY) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          }
+        }
+      )
+    }
+
     // Parse and validate the request body
     const body = await request.json()
     const validatedData = leadSchema.parse(body)
@@ -61,16 +89,10 @@ export async function POST(request: Request) {
       .insert({
         customer_id: customer.id,
         status: 'NEW',
-        mobility_type: validatedData.mobility_types?.length 
-          ? validatedData.mobility_types.join(', ') 
-          : null,
         ramp_length: validatedData.knows_length === 'YES' 
           ? validatedData.ramp_length 
           : null,
         timeline: validatedData.timeline,
-        rental_duration: validatedData.knows_duration === 'YES' 
-          ? `${validatedData.rental_months} MONTHS` 
-          : null,
         notes: validatedData.notes,
       })
       .select()
@@ -96,13 +118,23 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { message: 'Lead created successfully', leadId: lead.id },
-      { status: 201 }
+      { 
+        status: 201,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        }
+      }
     )
   } catch (error) {
     console.error('Error creating lead:', error)
     return NextResponse.json(
       { error: 'Failed to create lead' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        }
+      }
     )
   }
 } 

@@ -1,61 +1,74 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  // Get the pathname of the request
-  const pathname = request.nextUrl.pathname
+  // Create an unmodified response
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  // Allow /api/leads endpoint to bypass auth
-  if (pathname === '/api/leads') {
-    return NextResponse.next()
-  }
-
-  let response = NextResponse.next()
-
-  // Create a Supabase client configured to use cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+        set(name: string, value: string, options: any) {
+          // Set the cookie in the request for the current pass
+          request.cookies.set(name, value);
+          // Set the cookie in the response for the browser
+          response.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+        remove(name: string, options: any) {
+          request.cookies.delete(name);
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     }
-  )
+  );
 
-  // Refresh session if expired
-  await supabase.auth.getSession()
+  // This will refresh session if expired - required for Server Components
+  // Always use getUser() instead of getSession() in server-side code for security
+  const { data: { user } } = await supabase.auth.getUser();
 
-  return response
+  // Get the current path
+  const path = request.nextUrl.pathname;
+
+  // Define public routes that don't require authentication
+  const isPublicRoute = path === '/sign-in' || 
+                       path === '/sign-up' || 
+                       path === '/forgot-password' ||
+                       path.startsWith('/_next') || 
+                       path.startsWith('/api/quotes/accept') ||
+                       path.startsWith('/quote-accepted') ||
+                       path.startsWith('/api');
+
+  // If the user is not logged in and trying to access a protected route
+  if (!user && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/sign-in', request.url));
+  }
+
+  // If the user is logged in and trying to access auth pages or root
+  if (user && (path === '/sign-in' || path === '/sign-up' || path === '/')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  return response;
 }
 
-// Configure which paths need middleware
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
+     * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
-     * - public files
+     * - public files (images etc)
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};
