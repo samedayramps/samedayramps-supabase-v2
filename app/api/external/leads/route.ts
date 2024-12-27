@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { z } from 'zod'
@@ -65,7 +65,17 @@ export async function POST(request: Request) {
     const body = await request.json()
     const validatedData = leadSchema.parse(body)
     
-    const supabase = await createClient()
+    // Create Supabase client with service role key
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
     // Create customer
     const { data: customer, error: customerError } = await supabase
