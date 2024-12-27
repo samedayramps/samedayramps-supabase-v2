@@ -32,11 +32,6 @@ const supabase = createClient(
   }
 )
 
-// Middleware to bypass auth for now during testing
-export async function middleware(request: Request) {
-  return NextResponse.next()
-}
-
 export async function POST(request: Request) {
   console.log('=== START POST REQUEST ===')
   
@@ -124,9 +119,4 @@ export async function OPTIONS(request: Request) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   })
-}
-
-// Configure which methods are allowed
-export const config = {
-  matcher: '/api/leads',
 } 
