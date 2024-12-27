@@ -137,6 +137,28 @@ export async function POST(request: Request) {
     )
   } catch (error) {
     console.error('Error creating lead:', error)
+    
+    // Handle Zod validation errors
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation error', 
+          details: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          }
+        }
+      )
+    }
+
+    // Handle other errors
     return NextResponse.json(
       { error: 'Failed to create lead' },
       { 
