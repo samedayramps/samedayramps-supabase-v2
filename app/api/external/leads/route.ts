@@ -24,8 +24,6 @@ const leadSchema = z.object({
     }),
   }),
   timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']),
-  knows_length: z.enum(['YES', 'NO']),
-  ramp_length: z.number().nullable(),
   notes: z.string().nullable(),
 })
 
@@ -99,9 +97,6 @@ export async function POST(request: Request) {
       .insert({
         customer_id: customer.id,
         status: 'NEW',
-        ramp_length: validatedData.knows_length === 'YES' 
-          ? validatedData.ramp_length 
-          : null,
         timeline: validatedData.timeline,
         notes: validatedData.notes,
       })

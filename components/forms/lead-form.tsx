@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { useState } from "react"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,12 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { MOBILITY_TYPES } from "@/lib/constants"
-import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
-import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/hooks/use-toast"
 import { type Tables } from "@/types/database.types"
 import { updateLead } from "@/app/actions/leads"
@@ -53,11 +50,6 @@ const leadFormSchema = z.object({
     }),
   }),
   timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']),
-  knows_length: z.enum(['YES', 'NO']),
-  ramp_length: z.number().optional().nullable(),
-  knows_duration: z.enum(['YES', 'NO']),
-  rental_months: z.number().min(1).max(60).optional().nullable(),
-  mobility_types: z.array(z.string()).optional().default([]),
   status: z.string().default('NEW'),
   notes: z.string().optional().nullable(),
 })
@@ -116,22 +108,10 @@ export function LeadForm({ initialData }: LeadFormProps) {
         },
       },
       timeline: initialData?.timeline as any ?? 'FLEXIBLE',
-      knows_length: initialData?.ramp_length ? 'YES' : 'NO',
-      ramp_length: initialData?.ramp_length ?? null,
-      knows_duration: initialData?.rental_duration ? 'YES' : 'NO',
-      rental_months: initialData?.rental_duration 
-        ? parseInt(initialData.rental_duration.split(' ')[0]) 
-        : null,
-      mobility_types: initialData?.mobility_type 
-        ? initialData.mobility_type.split(', ')
-        : [],
       status: initialData?.status ?? 'NEW',
       notes: initialData?.notes as string ?? "",
     },
   })
-
-  const knowsLength = form.watch('knows_length')
-  const knowsDuration = form.watch('knows_duration')
 
   const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<google.maps.places.PlaceResult | null>(null)
 
@@ -154,11 +134,11 @@ export function LeadForm({ initialData }: LeadFormProps) {
         // Update existing lead
         await updateLead(initialData.id, {
           status: values.status,
-          mobility_type: values.mobility_types?.length ? values.mobility_types.join(', ') : null,
-          ramp_length: values.knows_length === 'YES' ? values.ramp_length || null : null,
           timeline: values.timeline,
-          rental_duration: values.knows_duration === 'YES' ? `${values.rental_months} MONTHS` : null,
           notes: values.notes || null,
+          mobility_type: null,
+          ramp_length: null,
+          rental_duration: null,
         })
 
         // Update or create address if place details exist
@@ -213,10 +193,7 @@ export function LeadForm({ initialData }: LeadFormProps) {
             .insert({
               customer_id: customer.id,
               status: values.status,
-              mobility_type: values.mobility_types?.length ? values.mobility_types.join(', ') : null,
-              ramp_length: values.knows_length === 'YES' ? values.ramp_length || null : null,
               timeline: values.timeline,
-              rental_duration: values.knows_duration === 'YES' ? `${values.rental_months} MONTHS` : null,
               notes: values.notes || null,
             })
             .select()
@@ -425,173 +402,6 @@ export function LeadForm({ initialData }: LeadFormProps) {
                         <SelectItem value="FLEXIBLE">Flexible</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="knows_length"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Do you know the length needed?</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-row space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="YES" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Yes
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="NO" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            No
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {knowsLength === 'YES' && (
-                <FormField
-                  control={form.control}
-                  name="ramp_length"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>How long? (in feet)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min={0}
-                          step="any"
-                          {...field}
-                          value={field.value ?? ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? Number(e.target.value) : null;
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <FormField
-                control={form.control}
-                name="knows_duration"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Do you know how long you will need it?</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-row space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="YES" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Yes
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="NO" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            No
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {knowsDuration === 'YES' && (
-                <FormField
-                  control={form.control}
-                  name="rental_months"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>How many months?</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min={1} 
-                          max={60}
-                          {...field}
-                          value={field.value ?? ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? Number(e.target.value) : null;
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <FormField
-                control={form.control}
-                name="mobility_types"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-4">
-                      <FormLabel>What specific mobility aids are used?</FormLabel>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(MOBILITY_TYPES).map(([key, value]) => (
-                        <FormField
-                          key={key}
-                          control={form.control}
-                          name="mobility_types"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={key}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(value)}
-                                    onCheckedChange={(checked) => {
-                                      const updatedValue = checked
-                                        ? [...(field.value || []), value]
-                                        : (field.value || [])?.filter((val: string) => val !== value)
-                                      field.onChange(updatedValue)
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {value}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
