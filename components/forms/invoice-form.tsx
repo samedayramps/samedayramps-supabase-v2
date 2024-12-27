@@ -33,7 +33,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 const invoiceFormSchema = z.object({
   agreement_id: z.string().min(1, "Agreement is required"),
-  invoice_type: z.enum(['SETUP', 'RENTAL', 'REMOVAL'] as const),
+  invoice_type: z.enum(['SETUP', 'RECURRING', 'ONE_TIME'] as const),
   amount: z.number().min(0, "Amount must be positive"),
   paid: z.boolean().default(false),
   payment_date: z.string().nullable(),
@@ -99,11 +99,11 @@ export function InvoiceForm({ initialData, agreementId, agreements }: InvoiceFor
         case 'SETUP':
           amount = selectedAgreement.quote.setup_fee || 0
           break
-        case 'RENTAL':
+        case 'RECURRING':
           amount = selectedAgreement.quote.monthly_rental_rate || 0
           break
-        case 'REMOVAL':
-          // You might want to set a default removal fee or calculate it differently
+        case 'ONE_TIME':
+          // You might want to set a default one-time fee or calculate it differently
           amount = selectedAgreement.quote.setup_fee || 0
           break
       }
@@ -257,8 +257,8 @@ export function InvoiceForm({ initialData, agreementId, agreements }: InvoiceFor
                       {Object.entries(INVOICE_TYPE).map(([key, value]) => (
                         <SelectItem key={key} value={value}>
                           {value === 'SETUP' ? 'Setup Fee' : 
-                           value === 'RENTAL' ? 'Rental Payment' : 
-                           value === 'REMOVAL' ? 'Removal Fee' : 
+                           value === 'RECURRING' ? 'Recurring Payment' : 
+                           value === 'ONE_TIME' ? 'One-Time Payment' : 
                            value}
                         </SelectItem>
                       ))}
