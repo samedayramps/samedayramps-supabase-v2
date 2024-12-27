@@ -81,7 +81,6 @@ export async function POST(request: Request) {
       throw customerError
     }
 
-    
     console.log('Customer created successfully:', JSON.stringify(customer, null, 2))
 
     console.log('Attempting to create lead...')
