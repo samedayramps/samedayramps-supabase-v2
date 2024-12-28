@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 import { type Database } from '@/types/database.types'
+import { Resend } from 'resend'
+import { LeadNotificationEmail } from '@/emails/lead-notification-email'
 
 // Validation schema for the incoming lead data
 const leadSchema = z.object({
@@ -27,6 +29,8 @@ const leadSchema = z.object({
   timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']).nullable(),
   notes: z.string().nullable(),
 })
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: Request) {
   try {
@@ -111,6 +115,22 @@ export async function POST(request: Request) {
       .single()
 
     if (leadError) throw leadError
+
+    // Send notification email
+    await resend.emails.send({
+      from: 'Same Day Ramps <leads@samedayramps.com>',
+      to: 'ty@samedayramps.com',
+      subject: `New Lead: ${validatedData.customer.first_name} ${validatedData.customer.last_name}`,
+      react: LeadNotificationEmail({
+        customerName: `${validatedData.customer.first_name} ${validatedData.customer.last_name}`,
+        customerEmail: validatedData.customer.email || 'Not provided',
+        customerPhone: validatedData.customer.phone || 'Not provided',
+        installAddress: validatedData.customer.address.formatted_address,
+        timeline: validatedData.timeline || 'Not specified',
+        notes: validatedData.notes || 'No notes',
+        leadId: lead.id,
+      }),
+    })
 
     return NextResponse.json(
       { 
