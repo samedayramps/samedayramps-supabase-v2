@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { z } from 'zod'
+import { type Database } from '@/types/database.types'
 
 // Validation schema for the incoming lead data
 const leadSchema = z.object({
@@ -23,22 +24,9 @@ const leadSchema = z.object({
       place_id: z.string().nullable(),
     }),
   }),
-  timeline: z.string().nullable(),
-  notes: z.union([z.string(), z.record(z.any())]).nullable(),
+  timeline: z.enum(['ASAP', 'THIS_WEEK', 'THIS_MONTH', 'FLEXIBLE']).nullable(),
+  notes: z.string().nullable(),
 })
-
-// CORS preflight
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
-    },
-  })
-}
 
 export async function POST(request: Request) {
   try {
@@ -64,7 +52,7 @@ export async function POST(request: Request) {
     const validatedData = leadSchema.parse(body)
     
     // Create Supabase client with service role key
-    const supabase = createClient(
+    const supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -87,9 +75,28 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    if (customerError) {
-      throw customerError
-    }
+    if (customerError) throw customerError
+
+    // Create address
+    const { data: address, error: addressError } = await supabase
+      .from('addresses')
+      .insert({
+        customer_id: customer.id,
+        formatted_address: validatedData.customer.address.formatted_address,
+        street_number: validatedData.customer.address.street_number,
+        street_name: validatedData.customer.address.street_name,
+        city: validatedData.customer.address.city,
+        state: validatedData.customer.address.state,
+        postal_code: validatedData.customer.address.postal_code,
+        country: validatedData.customer.address.country,
+        lat: validatedData.customer.address.lat,
+        lng: validatedData.customer.address.lng,
+        place_id: validatedData.customer.address.place_id,
+      })
+      .select()
+      .single()
+
+    if (addressError) throw addressError
 
     // Create lead
     const { data: lead, error: leadError } = await supabase
@@ -98,35 +105,24 @@ export async function POST(request: Request) {
         customer_id: customer.id,
         status: 'NEW',
         timeline: validatedData.timeline,
-        notes: validatedData.notes,
+        notes: validatedData.notes ? { content: validatedData.notes } : null,
       })
       .select()
       .single()
 
-    if (leadError) {
-      throw leadError
-    }
-
-    // Create address
-    if (validatedData.customer.address) {
-      const { error: addressError } = await supabase
-        .from('addresses')
-        .insert({
-          ...validatedData.customer.address,
-          customer_id: customer.id,
-        })
-
-      if (addressError) {
-        throw addressError
-      }
-    }
+    if (leadError) throw leadError
 
     return NextResponse.json(
-      { message: 'Lead created successfully', leadId: lead.id },
+      { 
+        success: true,
+        leadId: lead.id,
+      },
       { 
         status: 201,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         }
       }
     )
@@ -164,4 +160,17 @@ export async function POST(request: Request) {
       }
     )
   }
+}
+
+// Add OPTIONS method for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  })
 } 
